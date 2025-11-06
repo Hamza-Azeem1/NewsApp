@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// If you already have core/constants.dart with this constant, import it instead:
-// import '../../core/constants.dart' show newsCollection;
+// Or import from your core/constants.dart
 const String newsCollection = 'news';
 
 class AdminNewsRepository {

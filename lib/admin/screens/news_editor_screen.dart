@@ -5,7 +5,10 @@ import '../services/storage_service.dart';
 import '../widgets/news_form.dart';
 
 class NewsEditorScreen extends StatefulWidget {
-  const NewsEditorScreen({super.key});
+  final String? docId;                         // null => create
+  final Map<String, dynamic>? initial;         // when editing
+
+  const NewsEditorScreen({super.key, this.docId, this.initial});
 
   @override
   State<NewsEditorScreen> createState() => _NewsEditorScreenState();
@@ -23,22 +26,58 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
     required String description,
     required Uint8List? imageBytes,
     required String? imageExt,
-    required String? imageUrl, // <-- new
+    required String? imageUrl, // from URL mode
   }) async {
     setState(() => _busy = true);
     try {
-      // 1) Create the doc without image first; we’ll patch image field next
+      // EDIT mode
+      if (widget.docId != null) {
+        final updates = {
+          'category': category,
+          'title': title,
+          'subtitle': subtitle,
+          'description': description,
+        };
+
+        // If URL provided, prefer it
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          updates['imageUrl'] = imageUrl;
+        }
+        // Else if file selected and Storage is available
+        else if (imageBytes != null && imageBytes.isNotEmpty) {
+          try {
+            final url = await _storage.uploadNewsImage(
+              docId: widget.docId!,
+              bytes: imageBytes,
+              ext: (imageExt ?? 'jpg').toLowerCase(),
+            );
+            updates['imageUrl'] = url;
+          } catch (e) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Image upload failed. You can paste an Image URL instead.\n$e')),
+            );
+          }
+        }
+
+        await _repo.updateNews(widget.docId!, updates);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Updated')));
+        Navigator.pop(context);
+        return;
+      }
+
+      // CREATE mode
       final docId = await _repo.createNews(
         category: category,
         title: title,
         subtitle: subtitle,
         description: description,
         date: DateTime.now(),
-        imageUrl: imageUrl ?? '', // use URL immediately if provided
+        imageUrl: imageUrl ?? '', // use URL immediately if given
       );
 
-      // 2) If user selected upload (bytes present), try uploading to Storage
-      if (imageBytes != null && imageBytes.isNotEmpty) {
+      if (imageUrl == null && imageBytes != null && imageBytes.isNotEmpty) {
         try {
           final url = await _storage.uploadNewsImage(
             docId: docId,
@@ -47,10 +86,9 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
           );
           await _repo.updateNews(docId, {'imageUrl': url});
         } catch (e) {
-          // If Storage is disabled or blocked, we still keep the doc and just show one clear error.
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Image upload failed (using Storage). You can paste an Image URL instead.\n$e')),
+            SnackBar(content: Text('Image upload failed. You can paste an Image URL instead.\n$e')),
           );
         }
       }
@@ -68,14 +106,19 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final editing = widget.docId != null;
     return Scaffold(
-      appBar: AppBar(title: const Text('Create News')),
+      appBar: AppBar(title: Text(editing ? 'Edit News' : 'Create News')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: _busy
             ? const Center(child: CircularProgressIndicator())
             : SingleChildScrollView(
-                child: NewsForm(onSubmit: _handleSubmit),
+                child: NewsForm(
+                  onSubmit: _handleSubmit,
+                  // pass initial values to prefill form when editing
+                  initial: widget.initial,
+                ),
               ),
       ),
     );

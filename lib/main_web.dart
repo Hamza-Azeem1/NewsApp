@@ -21,6 +21,9 @@ class WebApp extends StatelessWidget {
       brightness: Brightness.dark,
       colorSchemeSeed: const Color(0xFF6F6CFB),
       scaffoldBackgroundColor: const Color(0xFF0E1117),
+      appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+      inputDecorationTheme:
+          const InputDecorationTheme(border: OutlineInputBorder()),
     );
 
     return MaterialApp(
@@ -31,7 +34,8 @@ class WebApp extends StatelessWidget {
         '/': (_) => const HomeScreen(),
         '/admin': (_) => const AdminGate(),
       },
-      onUnknownRoute: (_) => MaterialPageRoute(builder: (_) => const HomeScreen()),
+      onUnknownRoute: (_) =>
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
   }
 }

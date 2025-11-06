@@ -12,10 +12,13 @@ class NewsForm extends StatefulWidget {
     required String description,
     required Uint8List? imageBytes,
     required String? imageExt,
-    required String? imageUrl, // <-- new
+    required String? imageUrl,
   }) onSubmit;
 
-  const NewsForm({super.key, required this.onSubmit});
+  /// Pass a Firestore document map when editing to prefill fields.
+  final Map<String, dynamic>? initial;
+
+  const NewsForm({super.key, required this.onSubmit, this.initial});
 
   @override
   State<NewsForm> createState() => _NewsFormState();
@@ -32,6 +35,22 @@ class _NewsFormState extends State<NewsForm> {
   ImageSourceKind _source = ImageSourceKind.url;
   Uint8List? _imageBytes;
   String? _imageExt;
+
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.initial;
+    if (m != null) {
+      _category.text = (m['category'] ?? '').toString();
+      _title.text = (m['title'] ?? '').toString();
+      _subtitle.text = (m['subtitle'] ?? '').toString();
+      _desc.text = (m['description'] ?? '').toString();
+      _imageUrl.text = (m['imageUrl'] ?? '').toString();
+      if (_imageUrl.text.isNotEmpty) {
+        _source = ImageSourceKind.url;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -57,14 +76,16 @@ class _NewsFormState extends State<NewsForm> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    // If URL mode, require a URL
     if (_source == ImageSourceKind.url && _imageUrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please paste an Image URL or switch to Upload')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please paste an Image URL or switch to Upload')),
+      );
       return;
     }
-    // If Upload mode, require selected file
     if (_source == ImageSourceKind.upload && (_imageBytes == null || _imageBytes!.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select an image file')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an image file')),
+      );
       return;
     }
 
@@ -144,7 +165,6 @@ class _NewsFormState extends State<NewsForm> {
               ),
               const SizedBox(height: 12),
 
-              // URL field or file picker based on selection
               if (_source == ImageSourceKind.url)
                 TextFormField(
                   controller: _imageUrl,
@@ -175,8 +195,8 @@ class _NewsFormState extends State<NewsForm> {
               const SizedBox(height: 16),
               FilledButton.icon(
                 onPressed: _submit,
-                icon: const Icon(Icons.publish_rounded),
-                label: const Text('Publish'),
+                icon: const Icon(Icons.save_rounded),
+                label: const Text('Save'),
               ),
             ],
           ),

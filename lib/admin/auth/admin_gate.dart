@@ -1,12 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../screens/admin_dashboard.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../ui/admin_shell.dart';
 import 'admin_sign_in_screen.dart';
 
-/// Guards the admin area:
-/// - If not signed in -> shows sign-in
-/// - If signed in but no 'admin' custom claim -> "Not authorized"
-/// - If signed in and admin -> AdminDashboard
 class AdminGate extends StatelessWidget {
   const AdminGate({super.key});
 
@@ -19,10 +15,8 @@ class AdminGate extends StatelessWidget {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         final user = snap.data;
-        if (user == null) {
-          return const AdminSignInScreen();
-        }
-        // Refresh token to get latest custom claims.
+        if (user == null) return const AdminSignInScreen();
+
         return FutureBuilder(
           future: user.getIdTokenResult(true),
           builder: (context, tokenSnap) {
@@ -33,12 +27,10 @@ class AdminGate extends StatelessWidget {
             if (!isAdmin) {
               return Scaffold(
                 appBar: AppBar(title: const Text('Admin')),
-                body: const Center(
-                  child: Text('Not authorized. Ask the owner to grant admin access.'),
-                ),
+                body: const Center(child: Text('Not authorized. Ask the owner to grant admin access.')),
               );
             }
-            return const AdminDashboard();
+            return const AdminShell();
           },
         );
       },
