@@ -30,7 +30,7 @@ class _AdminSignInScreenState extends State<AdminSignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final maxW = 440.0;
+    const maxW = 440.0;
     return Scaffold(
       appBar: AppBar(title: const Text('Admin Sign In')),
       body: Center(

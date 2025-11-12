@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../screens/news_list_screen.dart';
+import '../screens/teachers_list_screen.dart'; 
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -15,11 +16,11 @@ class _AdminShellState extends State<AdminShell> {
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      const NewsListScreen(),
-      const _Placeholder(title: 'Teachers'),
-      const _Placeholder(title: 'Courses'),
-      const _Placeholder(title: 'eBooks'),
-    ];
+  const NewsListScreen(),
+  TeachersListScreen(),                
+  const _Placeholder(title: 'Courses'),
+  const _Placeholder(title: 'eBooks'),
+];
 
     return Scaffold(
       body: Row(
@@ -30,10 +31,10 @@ class _AdminShellState extends State<AdminShell> {
             onDestinationSelected: (i) => setState(() => _index = i),
             groupAlignment: -1,
             labelType: NavigationRailLabelType.all,
-            leading: Padding(
-              padding: const EdgeInsets.only(top: 8.0),
+            leading: const Padding(
+              padding: EdgeInsets.only(top: 8.0),
               child: Row(
-                children: const [
+                children: [
                   SizedBox(width: 12),
                   Icon(Icons.settings_applications_rounded, size: 22),
                   SizedBox(width: 8),

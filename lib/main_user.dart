@@ -16,7 +16,7 @@ class NewsSwipeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final seed = const Color(0xFF7C5CFF); // modern purple/indigo
+    const seed = Color(0xFF7C5CFF); // modern purple/indigo
     final baseDark = ThemeData(
       useMaterial3: true,
       colorSchemeSeed: seed,

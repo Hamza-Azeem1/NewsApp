@@ -102,7 +102,7 @@ class _NewsFormState extends State<NewsForm> {
 
   @override
   Widget build(BuildContext context) {
-    final maxW = 900.0;
+    const maxW = 900.0;
 
     return Center(
       child: ConstrainedBox(

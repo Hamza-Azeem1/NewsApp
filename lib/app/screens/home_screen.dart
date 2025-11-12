@@ -1,6 +1,4 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../models/news_article.dart';
 import '../models/app_category.dart';
 import '../services/news_repository.dart';
@@ -9,6 +7,7 @@ import '../widgets/category_bar.dart';
 import '../widgets/side_drawer.dart';
 import '../widgets/footer_nav.dart';
 import 'article_screen.dart';
+import 'teachers_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _tabIndex = 0;
   String? _selectedCategory; // null => ALL
+  String? _searchQuery;      // inline search for News tab
   late PageController _pageController;
   int _totalPages = 1;
 
@@ -56,8 +56,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final body = IndexedStack(
       index: _tabIndex,
       children: [
-        _buildHomeFeed(),
-        const _PlaceholderScreen(title: 'Teachers'),
+        _buildHomeFeed(),          // News (with inline search bar)
+        TeachersScreen(),          // Teachers screen (has its own layout)
         const _PlaceholderScreen(title: 'Courses'),
         const _PlaceholderScreen(title: 'eBooks'),
       ],
@@ -67,9 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: const SideDrawer(),
       appBar: AppBar(
         title: const Text('News Swipe'),
-        actions: const [
-          SizedBox(width: 8),
-        ],
+        centerTitle: true,
       ),
       body: body,
       bottomNavigationBar: FooterNav(
@@ -82,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHomeFeed() {
     return Column(
       children: [
+        // Categories row
         StreamBuilder<List<AppCategory>>(
           stream: _repo.streamCategories(),
           builder: (context, snapshot) {
@@ -93,7 +92,36 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
+
         const SizedBox(height: 8),
+
+        // 🔍 Inline search bar (centered, above the cards)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: TextField(
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Search news...',
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.35),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(28),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.trim().toLowerCase();
+              });
+            },
+          ),
+        ),
+
+        const SizedBox(height: 6),
+
+        // News feed (vertical pager)
         Expanded(
           child: StreamBuilder<List<NewsArticle>>(
             stream: _repo.streamNews(category: _selectedCategory), // null => ALL
@@ -104,12 +132,32 @@ class _HomeScreenState extends State<HomeScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-              final items = snapshot.data ?? [];
-              if (items.isEmpty) {
-                return const Center(child: Text('No news found for this category.'));
+
+              // All items (optionally category-filtered by repo)
+              final all = snapshot.data ?? [];
+
+              // Inline search filter
+              final q = (_searchQuery ?? '').toLowerCase();
+              final filtered = q.isEmpty
+                  ? all
+                  : all.where((a) {
+                      bool contains(String s) => s.toLowerCase().contains(q);
+                      return contains(a.title) ||
+                          contains(a.subtitle) ||
+                          contains(a.description) ||
+                          contains(a.category);
+                    }).toList();
+
+              if (filtered.isEmpty) {
+                return Center(
+                  child: Text(
+                    q.isEmpty ? 'No news found for this category.' : 'No news matched your search.',
+                  ),
+                );
               }
 
-              _totalPages = items.length + 1; // +1 end-of-feed
+              // Pager math uses the filtered list
+              _totalPages = filtered.length + 1; // +1 end-of-feed
               final endIndex = _totalPages - 1;
 
               return PageView.builder(
@@ -134,8 +182,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 itemCount: _totalPages,
                 itemBuilder: (context, index) {
-                  if (index < items.length) {
-                    final article = items[index];
+                  if (index < filtered.length) {
+                    final article = filtered[index];
                     return _NewsPage(
                       article: article,
                       pageLabel: '${_currentPageSafe() + 1}/$_totalPages',
@@ -148,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return _EndOfFeed(
                     label: _selectedCategory == null
                         ? 'No more news'
-                        : 'No more ${_selectedCategory} news',
+                        : 'No more $_selectedCategory news',
                   );
                 },
               );
