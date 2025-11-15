@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../screens/news_list_screen.dart';
 import '../screens/teachers_list_screen.dart'; 
+import '../screens/admin_ebooks_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -19,7 +20,7 @@ class _AdminShellState extends State<AdminShell> {
   const NewsListScreen(),
   TeachersListScreen(),                
   const _Placeholder(title: 'Courses'),
-  const _Placeholder(title: 'eBooks'),
+  const AdminEbooksScreen(),
 ];
 
     return Scaffold(

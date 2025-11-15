@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/teacher.dart';
+import '../../app/screens/in_app_browser.dart';
 
 class TeacherCard extends StatelessWidget {
   final Teacher t;
@@ -96,15 +96,22 @@ class TeacherCard extends StatelessWidget {
                 // Profile (intro)
                 if (t.intro?.isNotEmpty == true) ...[
                   const SizedBox(height: 6),
-                  _SectionPill(icon: Icons.badge_outlined, label: 'Profile'),
+                  const _SectionPill(icon: Icons.badge_outlined, label: 'Profile'),
                   const SizedBox(height: 4),
-                  Text(t.intro!, maxLines: bioLines, overflow: TextOverflow.ellipsis),
+                  Text(
+                    t.intro!,
+                    maxLines: bioLines,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
 
                 // Specializations
                 if (t.specializations.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  _SectionPill(icon: Icons.auto_awesome, label: 'Specializations'),
+                  const _SectionPill(
+                    icon: Icons.auto_awesome,
+                    label: 'Specializations',
+                  ),
                   const SizedBox(height: 6),
                   _Chips(items: t.specializations, max: specMax),
                 ],
@@ -112,7 +119,10 @@ class TeacherCard extends StatelessWidget {
                 // Education
                 if (t.qualifications.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  _SectionPill(icon: Icons.school_outlined, label: 'Education'),
+                  const _SectionPill(
+                    icon: Icons.school_outlined,
+                    label: 'Education',
+                  ),
                   const SizedBox(height: 6),
                   _Chips(items: t.qualifications, max: eduMax),
                 ],
@@ -120,7 +130,10 @@ class TeacherCard extends StatelessWidget {
                 // Links
                 if (t.socials.isNotEmpty) ...[
                   const SizedBox(height: 10),
-                  _SectionPill(icon: Icons.link_rounded, label: 'Links'),
+                  const _SectionPill(
+                    icon: Icons.link_rounded,
+                    label: 'Links',
+                  ),
                   const SizedBox(height: 6),
                   _LinksRow(socials: t.socials),
                 ],
@@ -194,11 +207,21 @@ class _LinksRow extends StatelessWidget {
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
               visualDensity: VisualDensity.compact,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             icon: Icon(_iconFor(e.key), size: 18),
             label: Text(e.key),
-            onPressed: () => launchUrl(Uri.parse(e.value), mode: LaunchMode.externalApplication),
+            onPressed: () {
+              // 👇 Open social link in *in-app* browser
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => InAppBrowser(url: e.value),
+                ),
+              );
+            },
           ),
         if (entries.length > 3) Text('+${entries.length - 3}'),
       ],
@@ -213,8 +236,12 @@ class _LinksRow extends StatelessWidget {
     if (l.contains('github')) return Icons.code_rounded;
     if (l.contains('facebook')) return Icons.facebook_rounded;
     if (l.contains('instagram')) return Icons.camera_alt_outlined;
-    if (l.contains('website') || l.contains('portfolio')) return Icons.language_rounded;
-    if (l.contains('dribbble') || l.contains('dribble')) return Icons.sports_basketball_outlined;
+    if (l.contains('website') || l.contains('portfolio')) {
+      return Icons.language_rounded;
+    }
+    if (l.contains('dribbble') || l.contains('dribble')) {
+      return Icons.sports_basketball_outlined;
+    }
     if (l.contains('behance')) return Icons.palette_outlined;
     return Icons.link_rounded;
   }

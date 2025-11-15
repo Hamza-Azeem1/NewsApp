@@ -8,6 +8,7 @@ import '../widgets/side_drawer.dart';
 import '../widgets/footer_nav.dart';
 import 'article_screen.dart';
 import 'teachers_screen.dart';
+import 'ebooks_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -59,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _buildHomeFeed(),          // News (with inline search bar)
         TeachersScreen(),          // Teachers screen (has its own layout)
         const _PlaceholderScreen(title: 'Courses'),
-        const _PlaceholderScreen(title: 'eBooks'),
+        const EbooksScreen(),
       ],
     );
 
