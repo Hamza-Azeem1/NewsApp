@@ -21,14 +21,6 @@ class ArticleScreen extends StatelessWidget {
               icon: const Icon(Icons.arrow_back_rounded),
               onPressed: () => Navigator.pop(context),
             ),
-            actions: [
-              IconButton(
-                tooltip: 'Share',
-                onPressed: () {},
-                icon: const Icon(Icons.ios_share_rounded),
-              ),
-              const SizedBox(width: 4),
-            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
