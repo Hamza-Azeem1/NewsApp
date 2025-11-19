@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:news_swipe/admin/screens/admin_courses_screen.dart';
 import '../screens/news_list_screen.dart';
 import '../screens/teachers_list_screen.dart'; 
 import '../screens/admin_ebooks_screen.dart';
@@ -18,8 +19,8 @@ class _AdminShellState extends State<AdminShell> {
   Widget build(BuildContext context) {
     final pages = <Widget>[
   const NewsListScreen(),
-  TeachersListScreen(),                
-  const _Placeholder(title: 'Courses'),
+  TeachersListScreen(),
+  const AdminCoursesScreen(),                
   const AdminEbooksScreen(),
 ];
 

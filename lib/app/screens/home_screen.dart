@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:news_swipe/app/screens/courses_screen.dart';
 import '../models/news_article.dart';
 import '../models/app_category.dart';
 import '../services/news_repository.dart';
@@ -59,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         _buildHomeFeed(),          // News (with inline search bar)
         TeachersScreen(),          // Teachers screen (has its own layout)
-        const _PlaceholderScreen(title: 'Courses'),
+        const CoursesScreen(),
         const EbooksScreen(),
       ],
     );

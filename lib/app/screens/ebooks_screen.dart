@@ -12,14 +12,56 @@ class EbooksScreen extends StatefulWidget {
   State<EbooksScreen> createState() => _EbooksScreenState();
 }
 
-class _EbooksScreenState extends State<EbooksScreen> {
+class _EbooksScreenState extends State<EbooksScreen>
+    with SingleTickerProviderStateMixin {
   final _ebooksRepository = EbooksRepository();
 
-  /// null or empty = All
+  bool _showSearchBar = false;
   String? _selectedCategoryName;
-
-  /// text in the search bar
   String _searchQuery = '';
+
+  late AnimationController _animCtrl;
+  late Animation<double> _expandAnim;
+
+  late TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _searchController = TextEditingController();
+
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+
+    _expandAnim = CurvedAnimation(
+      parent: _animCtrl,
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _toggleSearchBar() {
+    setState(() {
+      _showSearchBar = !_showSearchBar;
+
+      if (_showSearchBar) {
+        _animCtrl.forward();
+      } else {
+        _searchQuery = '';
+        _searchController.clear();
+        _animCtrl.reverse();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +70,16 @@ class _EbooksScreenState extends State<EbooksScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('E-Books'),
-        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: Icon(_showSearchBar ? Icons.close : Icons.search),
+            onPressed: _toggleSearchBar,
+          ),
+        ],
       ),
+
       body: StreamBuilder<List<Ebook>>(
-        stream: _ebooksRepository.streamEbooks(), // get all ebooks
+        stream: _ebooksRepository.streamEbooks(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting &&
               !snapshot.hasData) {
@@ -44,7 +92,7 @@ class _EbooksScreenState extends State<EbooksScreen> {
 
           final ebooks = snapshot.data ?? [];
 
-          // ---- Build unique category list from ebooks ----
+          // ---- Build category list ----
           final uniqueNames = ebooks
               .map((e) => e.category.trim())
               .where((c) => c.isNotEmpty)
@@ -53,23 +101,16 @@ class _EbooksScreenState extends State<EbooksScreen> {
             ..sort();
 
           final categories = uniqueNames
-              .map(
-                (name) => AppCategory(
-                  id: name,
-                  name: name,
-                ),
-              )
+              .map((name) => AppCategory(id: name, name: name))
               .toList();
 
           // ---- Filter by category ----
           List<Ebook> filtered = (_selectedCategoryName == null ||
                   _selectedCategoryName!.isEmpty)
               ? ebooks
-              : ebooks
-                  .where((e) => e.category == _selectedCategoryName)
-                  .toList();
+              : ebooks.where((e) => e.category == _selectedCategoryName).toList();
 
-          // ---- Filter by search text ----
+          // ---- Filter by search ----
           final q = _searchQuery.trim().toLowerCase();
           if (q.isNotEmpty) {
             filtered = filtered.where((e) {
@@ -82,28 +123,37 @@ class _EbooksScreenState extends State<EbooksScreen> {
 
           return Column(
             children: [
-              const SizedBox(height: 8),
-
-              // 🔍 SEARCH BAR
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                child: TextField(
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search books...',
-                    prefixIcon: const Icon(Icons.search),
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide(
-                        color: theme.colorScheme.primary,
+              // 🔍 Animated Search Bar
+              SizeTransition(
+                sizeFactor: _expandAnim,
+                axisAlignment: -1.0,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() => _searchQuery = value);
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search books...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () {
+                                setState(() {
+                                  _searchQuery = '';
+                                  _searchController.clear();
+                                });
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceVariant,
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
                       ),
                     ),
                   ),
@@ -112,14 +162,12 @@ class _EbooksScreenState extends State<EbooksScreen> {
 
               const SizedBox(height: 8),
 
-              /// CATEGORY BAR
+              /// Category Bar
               CategoryBar(
                 categories: categories,
                 selected: _selectedCategoryName,
                 onSelect: (name) {
-                  setState(() {
-                    _selectedCategoryName = name;
-                  });
+                  setState(() => _selectedCategoryName = name);
                 },
               ),
 
