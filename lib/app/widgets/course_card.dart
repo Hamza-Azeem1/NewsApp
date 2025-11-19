@@ -43,14 +43,14 @@ class CourseCard extends StatelessWidget {
                       course.imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
-                        color: cs.surfaceVariant,
+                        color: cs.surfaceContainerHighest,
                         alignment: Alignment.center,
                         child: const Icon(Icons.school, size: 40),
                       ),
                     )
                   else
                     Container(
-                      color: cs.surfaceVariant,
+                      color: cs.surfaceContainerHighest,
                       alignment: Alignment.center,
                       child: const Icon(Icons.school, size: 40),
                     ),

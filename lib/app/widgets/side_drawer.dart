@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../screens/bookmarks_screen.dart';
 
 class SideDrawer extends StatelessWidget {
   const SideDrawer({super.key});
@@ -11,8 +12,29 @@ class SideDrawer extends StatelessWidget {
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(
-              child: Text('Menu', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              child: Text(
+                'Menu',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
+
+            // 🔖 NEW: Bookmarks
+            ListTile(
+              leading: const Icon(Icons.bookmark),
+              title: const Text('Bookmarks'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const BookmarksScreen(),
+                  ),
+                );
+              },
+            ),
+
             ListTile(
               leading: const Icon(Icons.info_outline),
               title: const Text('About'),

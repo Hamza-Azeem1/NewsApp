@@ -35,7 +35,7 @@ class _AdminSignInScreenState extends State<AdminSignInScreen> {
       appBar: AppBar(title: const Text('Admin Sign In')),
       body: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxW),
+          constraints: const BoxConstraints(maxWidth: maxW),
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(

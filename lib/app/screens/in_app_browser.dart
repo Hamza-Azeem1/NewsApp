@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class InAppBrowser extends StatefulWidget {
   final String url;
@@ -28,6 +29,13 @@ class _InAppBrowserState extends State<InAppBrowser> {
       ..loadRequest(Uri.parse(widget.url));
   }
 
+  Future<void> _openExternalBrowser() async {
+    final uri = Uri.parse(widget.url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,6 +46,11 @@ class _InAppBrowserState extends State<InAppBrowser> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.open_in_browser),
+            tooltip: 'View in browser',
+            onPressed: _openExternalBrowser,
+          ),
           IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () async {

@@ -20,6 +20,9 @@ class _EbooksScreenState extends State<EbooksScreen>
   String? _selectedCategoryName;
   String _searchQuery = '';
 
+  /// 🔹 'All' | 'Free' | 'Paid'
+  String _priceFilter = 'All';
+
   late AnimationController _animCtrl;
   late Animation<double> _expandAnim;
 
@@ -67,6 +70,12 @@ class _EbooksScreenState extends State<EbooksScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // First row categories: only Free / Paid — CategoryBar itself provides "All"
+    final priceCategories = <AppCategory>[
+      AppCategory(id: 'Free', name: 'Free'),
+      AppCategory(id: 'Paid', name: 'Paid'),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('E-Books'),
@@ -77,7 +86,6 @@ class _EbooksScreenState extends State<EbooksScreen>
           ),
         ],
       ),
-
       body: StreamBuilder<List<Ebook>>(
         stream: _ebooksRepository.streamEbooks(),
         builder: (context, snapshot) {
@@ -92,7 +100,7 @@ class _EbooksScreenState extends State<EbooksScreen>
 
           final ebooks = snapshot.data ?? [];
 
-          // ---- Build category list ----
+          // ---- Build category list (dynamic subjects) ----
           final uniqueNames = ebooks
               .map((e) => e.category.trim())
               .where((c) => c.isNotEmpty)
@@ -104,11 +112,29 @@ class _EbooksScreenState extends State<EbooksScreen>
               .map((name) => AppCategory(id: name, name: name))
               .toList();
 
+          // start from all
+          List<Ebook> filtered = List.of(ebooks);
+
+          // ---- Filter by price (All / Free / Paid) ----
+          switch (_priceFilter.toLowerCase()) {
+            case 'free':
+              filtered = filtered.where((e) => !e.isPaid).toList();
+              break;
+            case 'paid':
+              filtered = filtered.where((e) => e.isPaid).toList();
+              break;
+            case 'all':
+            default:
+              break;
+          }
+
           // ---- Filter by category ----
-          List<Ebook> filtered = (_selectedCategoryName == null ||
-                  _selectedCategoryName!.isEmpty)
-              ? ebooks
-              : ebooks.where((e) => e.category == _selectedCategoryName).toList();
+          if (_selectedCategoryName != null &&
+              _selectedCategoryName!.isNotEmpty) {
+            filtered = filtered
+                .where((e) => e.category == _selectedCategoryName)
+                .toList();
+          }
 
           // ---- Filter by search ----
           final q = _searchQuery.trim().toLowerCase();
@@ -149,7 +175,7 @@ class _EbooksScreenState extends State<EbooksScreen>
                             )
                           : null,
                       filled: true,
-                      fillColor: theme.colorScheme.surfaceVariant,
+                      fillColor: theme.colorScheme.surfaceContainerHighest,
                       isDense: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -162,14 +188,49 @@ class _EbooksScreenState extends State<EbooksScreen>
 
               const SizedBox(height: 8),
 
-              /// Category Bar
+              /// 1️⃣ PRICE BAR: (CategoryBar's built-in "All") + Free + Paid
               CategoryBar(
-                categories: categories,
-                selected: _selectedCategoryName,
+                categories: priceCategories,
+                // null => "All" chip selected
+                selected: _priceFilter == 'All' ? null : _priceFilter,
                 onSelect: (name) {
-                  setState(() => _selectedCategoryName = name);
+                  setState(() {
+                    _priceFilter = name ?? 'All';
+                  });
                 },
               ),
+
+              const SizedBox(height: 4),
+
+              /// 2️⃣ CATEGORY BAR: dynamic categories — WITHOUT "All"
+              if (categories.isNotEmpty)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Row(
+                    children: categories.map((cat) {
+                      final isSelected = _selectedCategoryName == cat.name;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(cat.name),
+                          selected: isSelected,
+                          onSelected: (_) {
+                            setState(() {
+                              // tap again to clear category filter
+                              if (isSelected) {
+                                _selectedCategoryName = null;
+                              } else {
+                                _selectedCategoryName = cat.name;
+                              }
+                            });
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
 
               const SizedBox(height: 8),
 

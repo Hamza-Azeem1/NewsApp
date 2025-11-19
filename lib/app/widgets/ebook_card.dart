@@ -11,18 +11,23 @@ class EbookCard extends StatelessWidget {
   });
 
   Future<void> _openBuyLink(BuildContext context) async {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => InAppBrowser(url: ebook.buyUrl),
-    ),
-  );
-}
-
+    if (ebook.buyUrl.trim().isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InAppBrowser(url: ebook.buyUrl),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final priceLabel = ebook.isPaid
+        ? (ebook.pricePkr != null ? 'PKR ${ebook.pricePkr}' : 'Paid')
+        : 'Free';
 
     return Card(
       elevation: 6,
@@ -46,7 +51,7 @@ class EbookCard extends StatelessWidget {
                     ebook.imageUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
-                      color: theme.colorScheme.surfaceVariant,
+                      color: theme.colorScheme.surfaceContainerHighest,
                       alignment: Alignment.center,
                       child: const Icon(Icons.book_outlined, size: 48),
                     ),
@@ -139,14 +144,53 @@ class EbookCard extends StatelessWidget {
                       color: theme.colorScheme.onSurface.withOpacity(0.8),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
+
+                  // 🔹 Free/Paid + price row
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ebook.isPaid
+                              ? cs.errorContainer.withOpacity(0.4)
+                              : cs.primaryContainer.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          ebook.isPaid ? 'Paid' : 'Free',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: ebook.isPaid ? cs.error : cs.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        priceLabel,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: () => _openBuyLink(context),
-                          icon: const Icon(Icons.shopping_bag_outlined),
-                          label: const Text('Buy Now'),
+                          icon: Icon(
+                            ebook.isPaid
+                                ? Icons.shopping_bag_outlined
+                                : Icons.menu_book_outlined,
+                          ),
+                          label: Text(ebook.isPaid ? 'Buy Now' : 'Open'),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(

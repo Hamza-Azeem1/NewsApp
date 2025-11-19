@@ -5,8 +5,8 @@ import '../services/storage_service.dart';
 import '../widgets/news_form.dart';
 
 class NewsEditorScreen extends StatefulWidget {
-  final String? docId;                         // null => create
-  final Map<String, dynamic>? initial;         // when editing
+  final String? docId; // null => create
+  final Map<String, dynamic>? initial; // when editing
 
   const NewsEditorScreen({super.key, this.docId, this.initial});
 
@@ -27,16 +27,18 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
     required Uint8List? imageBytes,
     required String? imageExt,
     required String? imageUrl, // from URL mode
+    required String? newsUrl,  // 🔗 NEW: external news link
   }) async {
     setState(() => _busy = true);
     try {
       // EDIT mode
       if (widget.docId != null) {
-        final updates = {
+        final updates = <String, dynamic>{
           'category': category,
           'title': title,
           'subtitle': subtitle,
           'description': description,
+          'newsUrl': newsUrl, // can be null/empty to clear
         };
 
         // If URL provided, prefer it
@@ -55,14 +57,19 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
           } catch (e) {
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Image upload failed. You can paste an Image URL instead.\n$e')),
+              SnackBar(
+                content: Text(
+                  'Image upload failed. You can paste an Image URL instead.\n$e',
+                ),
+              ),
             );
           }
         }
 
         await _repo.updateNews(widget.docId!, updates);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Updated')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Updated')));
         Navigator.pop(context);
         return;
       }
@@ -75,6 +82,7 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
         description: description,
         date: DateTime.now(),
         imageUrl: imageUrl ?? '', // use URL immediately if given
+        newsUrl: newsUrl,        // 🔗 pass through
       );
 
       if (imageUrl == null && imageBytes != null && imageBytes.isNotEmpty) {
@@ -88,17 +96,23 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Image upload failed. You can paste an Image URL instead.\n$e')),
+            SnackBar(
+              content: Text(
+                'Image upload failed. You can paste an Image URL instead.\n$e',
+              ),
+            ),
           );
         }
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Published')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Published')));
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

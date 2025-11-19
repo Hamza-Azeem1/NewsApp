@@ -42,7 +42,7 @@ class TeacherCard extends StatelessWidget {
                   width: double.infinity,
                   child: t.imageUrl == null || t.imageUrl!.isEmpty
                       ? Container(
-                          color: cs.surfaceVariant,
+                          color: cs.surfaceContainerHighest,
                           alignment: Alignment.center,
                           child: const Icon(Icons.person, size: 48),
                         )
@@ -156,7 +156,7 @@ class _SectionPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: cs.surfaceVariant.withOpacity(0.6),
+        color: cs.surfaceContainerHighest.withOpacity(0.6),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [

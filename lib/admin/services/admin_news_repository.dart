@@ -13,6 +13,7 @@ class AdminNewsRepository {
     required String description,
     required DateTime date,
     required String imageUrl,
+    String? newsUrl,                      // ✅ NEW FIELD
   }) async {
     final doc = _db.collection(newsCollection).doc();
     await doc.set({
@@ -22,6 +23,7 @@ class AdminNewsRepository {
       'description': description,
       'date': Timestamp.fromDate(date),
       'imageUrl': imageUrl,
+      'newsUrl': newsUrl,                // ✅ STORE IN FIRESTORE
     });
     return doc.id;
   }

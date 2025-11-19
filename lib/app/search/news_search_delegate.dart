@@ -166,7 +166,7 @@ class _NewsTile extends StatelessWidget {
 
   Widget _fallbackThumb(ColorScheme cs) {
     return Container(
-      color: cs.surfaceVariant,
+      color: cs.surfaceContainerHighest,
       alignment: Alignment.center,
       child: const Icon(Icons.article_outlined, size: 28),
     );

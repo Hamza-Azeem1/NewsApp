@@ -18,6 +18,7 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
   final _categoryController = TextEditingController();
   final _imageUrlController = TextEditingController();
   final _buyUrlController = TextEditingController();
+  final _priceController = TextEditingController(); // 🔹 new
 
   final _formKey = GlobalKey<FormState>();
 
@@ -27,6 +28,9 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
   /// controls if the left form panel is visible
   bool _showForm = false;
 
+  /// 🔹 Free / Paid toggle
+  bool _isPaid = false;
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -35,12 +39,13 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
     _categoryController.dispose();
     _imageUrlController.dispose();
     _buyUrlController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
   void _startCreate() {
     setState(() {
-      _showForm = true;               // ✅ show form
+      _showForm = true;
       _editingEbook = null;
       _titleController.clear();
       _descriptionController.clear();
@@ -48,12 +53,14 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
       _categoryController.clear();
       _imageUrlController.clear();
       _buyUrlController.clear();
+      _priceController.clear();
+      _isPaid = false;
     });
   }
 
   void _startEdit(Ebook ebook) {
     setState(() {
-      _showForm = true;               // ✅ open form when editing
+      _showForm = true;
       _editingEbook = ebook;
       _titleController.text = ebook.title;
       _descriptionController.text = ebook.description;
@@ -61,11 +68,33 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
       _categoryController.text = ebook.category;
       _imageUrlController.text = ebook.imageUrl;
       _buyUrlController.text = ebook.buyUrl;
+      _isPaid = ebook.isPaid;
+      _priceController.text =
+          ebook.pricePkr != null ? ebook.pricePkr.toString() : '';
     });
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // validate price if paid
+    int? pricePkr;
+    if (_isPaid) {
+      final raw = _priceController.text.trim();
+      if (raw.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter price for paid ebooks')),
+        );
+        return;
+      }
+      pricePkr = int.tryParse(raw);
+      if (pricePkr == null || pricePkr <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid PKR price')),
+        );
+        return;
+      }
+    }
 
     setState(() => _isSubmitting = true);
     try {
@@ -79,6 +108,8 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
         buyUrl: _buyUrlController.text.trim(),
         createdAt: _editingEbook?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
+        isPaid: _isPaid,
+        pricePkr: pricePkr,
       );
 
       if (_editingEbook == null) {
@@ -163,7 +194,7 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
           IconButton(
             tooltip: 'Add new ebook',
             icon: const Icon(Icons.add),
-            onPressed: _startCreate,      // ✅ show form on +
+            onPressed: _startCreate,
           ),
         ],
       ),
@@ -257,7 +288,7 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
                           TextFormField(
                             controller: _buyUrlController,
                             decoration: const InputDecoration(
-                              labelText: 'Buy URL',
+                              labelText: 'Buy / Download URL',
                               border: OutlineInputBorder(),
                             ),
                             validator: (value) {
@@ -283,6 +314,45 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
                               return null;
                             },
                           ),
+                          const SizedBox(height: 16),
+
+                          // 🔹 Free / Paid toggle + price
+                          Row(
+                            children: [
+                              ChoiceChip(
+                                label: const Text('Free'),
+                                selected: !_isPaid,
+                                onSelected: (_) {
+                                  setState(() {
+                                    _isPaid = false;
+                                    _priceController.clear();
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              ChoiceChip(
+                                label: const Text('Paid'),
+                                selected: _isPaid,
+                                onSelected: (_) {
+                                  setState(() {
+                                    _isPaid = true;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                          if (_isPaid) ...[
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _priceController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Price (PKR)',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ],
+
                           const SizedBox(height: 20),
                           Row(
                             children: [
@@ -360,7 +430,7 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
                     final ebook = ebooks[index];
                     return ListTile(
                       tileColor:
-                          Theme.of(context).colorScheme.surfaceVariant,
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -373,7 +443,10 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
                             : null,
                       ),
                       title: Text(ebook.title),
-                      subtitle: Text('${ebook.author} • ${ebook.category}'),
+                      subtitle: Text(
+                        '${ebook.author} • ${ebook.category}'
+                        ' • ${ebook.isPaid ? (ebook.pricePkr != null ? 'PKR ${ebook.pricePkr}' : 'Paid') : 'Free'}',
+                      ),
                       trailing: Wrap(
                         spacing: 8,
                         children: [

@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -13,28 +14,35 @@ class NewsForm extends StatefulWidget {
     required Uint8List? imageBytes,
     required String? imageExt,
     required String? imageUrl,
+    required String? newsUrl, // 🔗 NEW
   }) onSubmit;
 
   /// Pass a Firestore document map when editing to prefill fields.
   final Map<String, dynamic>? initial;
 
-  const NewsForm({super.key, required this.onSubmit, this.initial});
+  const NewsForm({
+    super.key,
+    required this.onSubmit,
+    this.initial,
+  });
 
   @override
   State<NewsForm> createState() => _NewsFormState();
 }
 
 class _NewsFormState extends State<NewsForm> {
-  final _formKey = GlobalKey<FormState>();
   final _category = TextEditingController();
   final _title = TextEditingController();
   final _subtitle = TextEditingController();
   final _desc = TextEditingController();
   final _imageUrl = TextEditingController();
+  final _newsUrl = TextEditingController();
 
   ImageSourceKind _source = ImageSourceKind.url;
   Uint8List? _imageBytes;
   String? _imageExt;
+
+  bool _saving = false;
 
   @override
   void initState() {
@@ -46,9 +54,7 @@ class _NewsFormState extends State<NewsForm> {
       _subtitle.text = (m['subtitle'] ?? '').toString();
       _desc.text = (m['description'] ?? '').toString();
       _imageUrl.text = (m['imageUrl'] ?? '').toString();
-      if (_imageUrl.text.isNotEmpty) {
-        _source = ImageSourceKind.url;
-      }
+      _newsUrl.text = (m['newsUrl'] ?? m['url'] ?? '').toString();
     }
   }
 
@@ -59,148 +65,211 @@ class _NewsFormState extends State<NewsForm> {
     _subtitle.dispose();
     _desc.dispose();
     _imageUrl.dispose();
+    _newsUrl.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
-    final res = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
-    if (res != null && res.files.isNotEmpty) {
-      final f = res.files.first;
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (res != null && res.files.single.bytes != null) {
       setState(() {
-        _imageBytes = f.bytes;
-        _imageExt = (f.extension ?? 'jpg').toLowerCase();
+        _imageBytes = res.files.single.bytes!;
+        _imageExt = res.files.single.extension;
       });
     }
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+    if (_saving) return;
 
-    if (_source == ImageSourceKind.url && _imageUrl.text.trim().isEmpty) {
+    final cat = _category.text.trim();
+    final title = _title.text.trim();
+    final subtitle = _subtitle.text.trim();
+    final desc = _desc.text.trim();
+    final imgUrl = _imageUrl.text.trim();
+    final url = _newsUrl.text.trim();
+
+    if (cat.isEmpty || title.isEmpty || desc.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please paste an Image URL or switch to Upload')),
+        const SnackBar(content: Text('Category, title & description are required')),
       );
       return;
     }
-    if (_source == ImageSourceKind.upload && (_imageBytes == null || _imageBytes!.isEmpty)) {
+
+    if (_source == ImageSourceKind.url && imgUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an image file')),
+        const SnackBar(content: Text('Please enter an image URL')),
       );
       return;
     }
+
+    if (_source == ImageSourceKind.upload && _imageBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please upload an image')),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
 
     widget.onSubmit(
-      category: _category.text.trim(),
-      title: _title.text.trim(),
-      subtitle: _subtitle.text.trim(),
-      description: _desc.text.trim(),
+      category: cat,
+      title: title,
+      subtitle: subtitle,
+      description: desc,
       imageBytes: _source == ImageSourceKind.upload ? _imageBytes : null,
       imageExt: _source == ImageSourceKind.upload ? _imageExt : null,
-      imageUrl: _source == ImageSourceKind.url ? _imageUrl.text.trim() : null,
+      imageUrl: _source == ImageSourceKind.url ? imgUrl : null,
+      newsUrl: url.isEmpty ? null : url,
     );
+
+    setState(() => _saving = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    const maxW = 900.0;
+    final cs = Theme.of(context).colorScheme;
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxW),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _category,
-                      decoration: const InputDecoration(labelText: 'Category (e.g., Economy, History)'),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _title,
-                      decoration: const InputDecoration(labelText: 'Title'),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _subtitle,
-                decoration: const InputDecoration(labelText: 'Subtitle'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _desc,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 8,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
-              ),
-              const SizedBox(height: 16),
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        top: 16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'News details',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _category,
+            decoration: const InputDecoration(
+              labelText: 'Category',
+              prefixIcon: Icon(Icons.category_outlined),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _title,
+            decoration: const InputDecoration(
+              labelText: 'Title',
+              prefixIcon: Icon(Icons.title),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _subtitle,
+            decoration: const InputDecoration(
+              labelText: 'Subtitle',
+              prefixIcon: Icon(Icons.subtitles_outlined),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _desc,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              labelText: 'Short description',
+              alignLabelWithHint: true,
+              prefixIcon: Icon(Icons.notes_outlined),
+            ),
+          ),
+          const SizedBox(height: 16),
 
-              // Image source selector
-              Row(
-                children: [
-                  const Text('Image source:'),
-                  const SizedBox(width: 12),
-                  ChoiceChip(
-                    label: const Text('URL'),
-                    selected: _source == ImageSourceKind.url,
-                    onSelected: (_) => setState(() => _source = ImageSourceKind.url),
-                  ),
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: const Text('Upload file'),
-                    selected: _source == ImageSourceKind.upload,
-                    onSelected: (_) => setState(() => _source = ImageSourceKind.upload),
-                  ),
-                ],
+          // 🔗 News URL
+          TextField(
+            controller: _newsUrl,
+            decoration: const InputDecoration(
+              labelText: 'News URL (opens in browser)',
+              prefixIcon: Icon(Icons.link),
+            ),
+            keyboardType: TextInputType.url,
+          ),
+          const SizedBox(height: 16),
+
+          // image source toggle
+          SegmentedButton<ImageSourceKind>(
+            segments: const [
+              ButtonSegment(
+                value: ImageSourceKind.url,
+                label: Text('Image URL'),
+                icon: Icon(Icons.link),
               ),
-              const SizedBox(height: 12),
-
-              if (_source == ImageSourceKind.url)
-                TextFormField(
-                  controller: _imageUrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Image URL (e.g., https://images.unsplash.com/photo-...)',
-                  ),
-                  validator: (v) {
-                    if (_source != ImageSourceKind.url) return null;
-                    if (v == null || v.trim().isEmpty) return 'Required';
-                    final ok = v.startsWith('http://') || v.startsWith('https://');
-                    return ok ? null : 'Must start with http(s)://';
-                  },
-                )
-              else
-                Row(
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: _pickImage,
-                      icon: const Icon(Icons.image_rounded),
-                      label: const Text('Select Image'),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(_imageBytes == null ? 'No file selected' : 'Image selected',
-                        style: const TextStyle(fontWeight: FontWeight.w600)),
-                  ],
-                ),
-
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: _submit,
-                icon: const Icon(Icons.save_rounded),
-                label: const Text('Save'),
+              ButtonSegment(
+                value: ImageSourceKind.upload,
+                label: Text('Upload image'),
+                icon: Icon(Icons.upload_file),
               ),
             ],
+            selected: {_source},
+            onSelectionChanged: (set) {
+              setState(() => _source = set.first);
+            },
           ),
-        ),
+          const SizedBox(height: 12),
+
+          if (_source == ImageSourceKind.url) ...[
+            TextField(
+              controller: _imageUrl,
+              decoration: const InputDecoration(
+                labelText: 'Image URL',
+                prefixIcon: Icon(Icons.image_outlined),
+              ),
+              keyboardType: TextInputType.url,
+            ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.folder_open),
+                    label: Text(_imageBytes == null
+                        ? 'Pick image'
+                        : 'Change image (${(_imageBytes!.length / 1024).toStringAsFixed(0)} KB)'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_imageBytes != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  _imageBytes!,
+                  height: 160,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+          ],
+
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _saving ? null : _submit,
+              icon: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_rounded),
+              label: const Text('Save'),
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.primary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
