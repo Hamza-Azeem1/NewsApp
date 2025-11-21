@@ -53,7 +53,7 @@ class _NewsSwipeAppState extends State<NewsSwipeApp> {
         elevation: 0,
         backgroundColor: Colors.white,
         indicatorColor:
-            baseLight.colorScheme.primary.withOpacity(0.12),
+            baseLight.colorScheme.primary.withValues(alpha: 0.12),
         labelTextStyle: WidgetStatePropertyAll(
           baseLight.textTheme.labelMedium
               ?.copyWith(fontWeight: FontWeight.w600),
@@ -86,7 +86,7 @@ class _NewsSwipeAppState extends State<NewsSwipeApp> {
         elevation: 0,
         backgroundColor: darkBg,
         indicatorColor:
-            baseDark.colorScheme.secondaryContainer.withOpacity(.25),
+            baseDark.colorScheme.secondaryContainer.withValues(alpha: 0.25),
         labelTextStyle: WidgetStatePropertyAll(
           baseDark.textTheme.labelMedium
               ?.copyWith(fontWeight: FontWeight.w600),
@@ -95,7 +95,7 @@ class _NewsSwipeAppState extends State<NewsSwipeApp> {
       chipTheme: baseDark.chipTheme.copyWith(
         side: const BorderSide(color: Colors.white10),
         selectedColor:
-            baseDark.colorScheme.secondaryContainer.withOpacity(.25),
+            baseDark.colorScheme.secondaryContainer.withValues(alpha: 0.25),
         labelStyle: baseDark.textTheme.labelLarge,
         padding:
             const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

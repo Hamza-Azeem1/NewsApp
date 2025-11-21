@@ -62,8 +62,8 @@ class CourseCard extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.10),
-                          Colors.black.withOpacity(0.55),
+                          Colors.black.withValues(alpha: 0.10),
+                          Colors.black.withValues(alpha: 0.55),
                         ],
                       ),
                     ),
@@ -84,7 +84,7 @@ class CourseCard extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          backgroundColor: cs.secondary.withOpacity(0.9),
+                          backgroundColor: cs.secondary.withValues(alpha: 0.9),
                           visualDensity: VisualDensity.compact,
                         ),
                         const SizedBox(width: 8),
@@ -134,7 +134,7 @@ class CourseCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.bodySmall?.copyWith(
-                        color: cs.onSurface.withOpacity(0.8),
+                        color: cs.onSurface.withValues(alpha: 0.8),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -147,7 +147,7 @@ class CourseCard extends StatelessWidget {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.bodySmall?.copyWith(
-                        color: cs.onSurface.withOpacity(0.7),
+                        color: cs.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                     const SizedBox(height: 10),

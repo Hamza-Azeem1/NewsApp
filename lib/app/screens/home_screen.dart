@@ -138,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen>
                 onTap: () => Scaffold.of(context).openDrawer(),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.withOpacity(0.4),
+                    color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   padding: const EdgeInsets.all(8),
@@ -249,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen>
                     : null,
                 filled: true,
                 fillColor:
-                    cs.surfaceContainerHighest.withOpacity(0.35),
+                    cs.surfaceContainerHighest.withValues(alpha: 0.35),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
                     vertical: 0, horizontal: 16),
@@ -346,39 +346,46 @@ class _HomeScreenState extends State<HomeScreen>
 
                         // When user reaches end-of-feed page
                         if (i == endIndex && _pageController.hasClients) {
-                          // Show the caught-up page for a bit,
-                          // then auto-scroll back to the first story.
                           if (!_autoResetScheduled) {
                             _autoResetScheduled = true;
+
+                            // Capture what we need BEFORE async gap
+                            final messenger =
+                                ScaffoldMessenger.of(context);
+                            final cs2 =
+                                Theme.of(context).colorScheme;
+
                             await Future.delayed(
                               const Duration(seconds: 2),
                             );
+
                             if (!mounted ||
                                 !_pageController.hasClients) {
                               _autoResetScheduled = false;
                               return;
                             }
+
                             await _pageController.animateToPage(
                               0,
                               duration:
                                   const Duration(milliseconds: 260),
                               curve: Curves.easeOutCubic,
                             );
+
                             if (!mounted) return;
+
                             setState(() {
                               _currentStoryIndex = 0;
                               _autoResetScheduled = false;
                             });
 
-                            // Modern floating snack
-                            final cs2 =
-                                Theme.of(context).colorScheme;
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
+                            // Modern floating snack (using captured messenger)
+                            messenger.showSnackBar(
                               SnackBar(
                                 behavior: SnackBarBehavior.floating,
                                 margin: const EdgeInsets.all(16),
-                                backgroundColor: cs2.surfaceContainerHigh,
+                                backgroundColor:
+                                    cs2.surfaceContainerHigh,
                                 content: Row(
                                   children: [
                                     Icon(
@@ -455,7 +462,7 @@ class _EndOfFeed extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            cs.surface.withOpacity(0.05),
+            cs.surface.withValues(alpha: 0.05),
             cs.surface,
           ],
         ),
@@ -463,73 +470,73 @@ class _EndOfFeed extends StatelessWidget {
       alignment: Alignment.bottomCenter,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 96, left: 16, right: 16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              'End of feed',
-              style: t.labelMedium?.copyWith(
-                color: cs.primary,
-                fontWeight: FontWeight.w600,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'End of feed',
+                style: t.labelMedium?.copyWith(
+                  color: cs.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHigh.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: cs.shadow.withOpacity(0.18),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                ),
-              ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHigh.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: cs.shadow.withValues(alpha: 0.18),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 42,
+                    color: cs.primary,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'You’re all caught up',
+                    style: t.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    style: t.bodySmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'New stories will appear here when available.',
+                    style: t.bodySmall?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.6),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.check_circle_rounded,
-                  size: 42,
-                  color: cs.primary,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'You’re all caught up',
-                  style: t.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: t.bodySmall?.copyWith(
-                    color: cs.onSurface.withOpacity(0.7),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'New stories will appear here when available.',
-                  style: t.bodySmall?.copyWith(
-                    color: cs.onSurface.withOpacity(0.6),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

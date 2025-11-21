@@ -87,7 +87,7 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
                           ? Theme.of(context)
                               .colorScheme
                               .primary
-                              .withOpacity(0.06)
+                              .withValues(alpha: 0.06)
                           : null,
                       title: Text(tool.name),
                       subtitle: Text(

@@ -90,7 +90,7 @@ class _AdminJobsScreenState extends State<AdminJobsScreen> {
                           ? Theme.of(context)
                               .colorScheme
                               .primary
-                              .withOpacity(0.06)
+                              .withValues(alpha: 0.06)
                           : null,
                       title: Text(job.title),
                       subtitle: Text(

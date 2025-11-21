@@ -22,6 +22,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: unused_local_variable
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -76,7 +77,8 @@ class _CoursesScreenState extends State<CoursesScreen> {
               // 🔹 Top row: All / Free / Paid
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 physics: const BouncingScrollPhysics(),
                 child: Row(
                   children: staticCats.map((cat) {
@@ -151,8 +153,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                           vertical: 12,
                         ),
                         itemCount: filteredCourses.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           return CourseCard(course: filteredCourses[index]);
                         },
@@ -219,19 +220,19 @@ class _StyledChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
         color: isSelected
-            ? cs.primary.withOpacity(0.22)
-            : cs.surfaceContainerHighest.withOpacity(0.45),
+            ? cs.primary.withValues(alpha: 0.22)
+            : cs.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(30),
         border: Border.all(
           width: 1.4,
           color: isSelected
-              ? cs.primary.withOpacity(0.9)
-              : cs.outlineVariant.withOpacity(0.35),
+              ? cs.primary.withValues(alpha: 0.9)
+              : cs.outlineVariant.withValues(alpha: 0.35),
         ),
         boxShadow: isSelected
             ? [
                 BoxShadow(
-                  color: cs.primary.withOpacity(0.28),
+                  color: cs.primary.withValues(alpha: 0.28),
                   blurRadius: 10,
                   spreadRadius: 1,
                   offset: const Offset(0, 3),
@@ -248,7 +249,7 @@ class _StyledChip extends StatelessWidget {
             style: TextStyle(
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               fontSize: 15.5,
-              color: isSelected ? cs.primary : cs.onSurface.withOpacity(0.85),
+              color: isSelected ? cs.primary : cs.onSurface.withValues(alpha: 0.85),
               letterSpacing: 0.2,
             ),
           ),

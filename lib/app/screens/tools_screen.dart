@@ -89,9 +89,6 @@ class _ToolsScreenState extends State<ToolsScreen>
 
           final allTools = snapshot.data ?? [];
 
-          // Static categories for top row
-          final staticCats = ['All', 'Free', 'Paid'];
-
           // Dynamic categories from tools (excluding any variation of All/Free/Paid)
           final dynamicCats = allTools
               .map((t) => t.category.trim())
@@ -128,8 +125,8 @@ class _ToolsScreenState extends State<ToolsScreen>
                       prefixIcon: const Icon(Icons.search_rounded),
                       isDense: true,
                       filled: true,
-                      fillColor:
-                          cs.surfaceContainerHighest.withOpacity(0.4),
+                      fillColor: cs.surfaceContainerHighest
+                          .withValues(alpha: 0.4),
                       contentPadding:
                           const EdgeInsets.symmetric(horizontal: 14),
                       focusedBorder: OutlineInputBorder(
@@ -139,7 +136,8 @@ class _ToolsScreenState extends State<ToolsScreen>
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30),
                         borderSide: BorderSide(
-                          color: cs.outline.withOpacity(0.4),
+                          color:
+                              cs.outline.withValues(alpha: 0.4),
                         ),
                       ),
                     ),
@@ -182,8 +180,7 @@ class _ToolsScreenState extends State<ToolsScreen>
               if (dynamicCats.isNotEmpty)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  padding:
-                      const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
                   child: Row(
                     children: dynamicCats.map((cat) {
                       final isSelected = _categoryFilter == cat;
@@ -219,8 +216,7 @@ class _ToolsScreenState extends State<ToolsScreen>
                               ? 'No tools found for this filter.'
                               : 'No tools found for "$_searchQuery".',
                           style: t.bodyMedium?.copyWith(
-                            color:
-                                cs.onSurface.withOpacity(0.6),
+                            color: cs.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       )
@@ -315,14 +311,14 @@ class _FilterChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isSelected
-            ? cs.primary.withOpacity(0.16)
-            : cs.surfaceContainerHighest.withOpacity(0.45),
+            ? cs.primary.withValues(alpha: 0.16)
+            : cs.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(30),
         border: Border.all(
           width: 1.3,
           color: isSelected
-              ? cs.primary.withOpacity(0.9)
-              : cs.outlineVariant.withOpacity(0.35),
+              ? cs.primary.withValues(alpha: 0.9)
+              : cs.outlineVariant.withValues(alpha: 0.35),
         ),
       ),
       child: InkWell(
@@ -336,7 +332,7 @@ class _FilterChip extends StatelessWidget {
               fontSize: 14.5,
               color: isSelected
                   ? cs.primary
-                  : cs.onSurface.withOpacity(0.85),
+                  : cs.onSurface.withValues(alpha: 0.85),
             ),
           ),
         ),

@@ -18,7 +18,7 @@ class FooterNav extends StatelessWidget {
       height: 65,
       elevation: 3,
       backgroundColor: cs.surface,
-      indicatorColor: cs.primary.withOpacity(0.16),
+      indicatorColor: cs.primary.withValues(alpha: 0.16),
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       selectedIndex: currentIndex,
       onDestinationSelected: onTap,

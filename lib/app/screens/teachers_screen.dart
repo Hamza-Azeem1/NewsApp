@@ -101,7 +101,7 @@ class _TeachersScreenState extends State<TeachersScreen>
                       : null,
                   filled: true,
                   fillColor:
-                      cs.surfaceContainerHighest.withOpacity(0.35),
+                      cs.surfaceContainerHighest.withValues(alpha: 0.35),
                   contentPadding: const EdgeInsets.symmetric(
                     vertical: 0,
                     horizontal: 16,

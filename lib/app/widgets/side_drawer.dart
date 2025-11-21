@@ -4,6 +4,7 @@ import '../screens/jobs_screen.dart';
 import '../screens/user_submission_screen.dart';
 import '../screens/terms_screen.dart';
 import '../screens/disclaimer_screen.dart';
+import '../screens/privacy_policy_screen.dart';
 
 class SideDrawer extends StatelessWidget {
   /// Kept for compatibility, but we now rely on Theme.of(context).brightness
@@ -55,7 +56,7 @@ class SideDrawer extends StatelessWidget {
                   Text(
                     'More options & info',
                     style: t.bodyMedium?.copyWith(
-                      color: cs.onPrimaryContainer.withOpacity(0.8),
+                      color: cs.onPrimaryContainer.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -126,6 +127,20 @@ class SideDrawer extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => const TermsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                   _item(
+                    context,
+                    icon: Icons.policy_rounded,
+                    text: 'Privacy Policy',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PrivacyPolicyScreen(),
                         ),
                       );
                     },
@@ -205,7 +220,7 @@ class SideDrawer extends StatelessWidget {
       ),
       minLeadingWidth: 26,
       horizontalTitleGap: 12,
-      hoverColor: cs.primaryContainer.withOpacity(0.2),
+      hoverColor: cs.primaryContainer.withValues(alpha: 0.2),
     );
   }
 }

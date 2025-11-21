@@ -49,10 +49,10 @@ class _AdminShellState extends State<AdminShell> {
             width: _isExpanded ? 230 : 72,
             curve: Curves.easeOut,
             decoration: BoxDecoration(
-              color: cs.surface.withOpacity(0.98),
+              color: cs.surface.withValues(alpha: 0.98),
               border: Border(
                 right: BorderSide(
-                  color: cs.outlineVariant.withOpacity(0.25),
+                  color: cs.outlineVariant.withValues(alpha: 0.25),
                 ),
               ),
             ),
@@ -71,7 +71,7 @@ class _AdminShellState extends State<AdminShell> {
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: cs.primary.withOpacity(0.1),
+                            color: cs.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -225,7 +225,7 @@ class _AdminShellState extends State<AdminShell> {
         ),
         decoration: BoxDecoration(
           color:
-              selected ? cs.primary.withOpacity(0.12) : Colors.transparent,
+              selected ? cs.primary.withValues(alpha: 0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(

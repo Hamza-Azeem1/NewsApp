@@ -8,24 +8,39 @@ class TeachersListScreen extends StatelessWidget {
   final repo = AdminTeachersRepository();
 
   Future<void> _delete(BuildContext context, Teacher t) async {
+    // ✅ Capture messenger before any async gaps
+    final messenger = ScaffoldMessenger.of(context);
+
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Delete teacher?'),
         content: Text('This will remove ${t.name}.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Delete')),
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Delete'),
+          ),
         ],
       ),
     );
+
     if (ok != true) return;
 
     try {
       await repo.delete(t.id);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Deleted')));
+      // ✅ Safe: using messenger, not context across async gap
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Deleted')),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 
@@ -39,7 +54,12 @@ class TeachersListScreen extends StatelessWidget {
             tooltip: 'Add teacher',
             icon: const Icon(Icons.add),
             onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const TeacherEditorScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const TeacherEditorScreen(),
+                ),
+              );
             },
           ),
         ],
@@ -47,10 +67,15 @@ class TeachersListScreen extends StatelessWidget {
       body: StreamBuilder<List<Teacher>>(
         stream: repo.watchAll(),
         builder: (context, snap) {
-          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snap.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
           final list = snap.data!;
           if (list.isEmpty) {
-            return const Center(child: Text('No teachers yet. Tap + to add.'));
+            return const Center(
+              child: Text('No teachers yet. Tap + to add.'),
+            );
           }
 
           return ListView.separated(
@@ -65,32 +90,43 @@ class TeachersListScreen extends StatelessWidget {
                   leading: t.imageUrl == null
                       ? const CircleAvatar(child: Icon(Icons.person))
                       : CircleAvatar(backgroundImage: NetworkImage(t.imageUrl!)),
-                  title: Text(t.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text(
+                    t.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   subtitle: Wrap(
                     spacing: 6,
                     runSpacing: -8,
                     children: [
-                      for (final s in t.specializations.take(3)) Chip(label: Text(s)),
-                      if (t.specializations.length > 3) Text('+${t.specializations.length - 3} more'),
+                      for (final s in t.specializations.take(3))
+                        Chip(label: Text(s)),
+                      if (t.specializations.length > 3)
+                        Text('+${t.specializations.length - 3} more'),
                     ],
                   ),
-                  trailing: Wrap(spacing: 8, children: [
-                    IconButton(
-                      tooltip: 'Edit',
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => TeacherEditorScreen(teacherId: t.id)),
-                        );
-                      },
-                    ),
-                    IconButton(
-                      tooltip: 'Delete',
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () => _delete(context, t),
-                    ),
-                  ]),
+                  trailing: Wrap(
+                    spacing: 8,
+                    children: [
+                      IconButton(
+                        tooltip: 'Edit',
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  TeacherEditorScreen(teacherId: t.id),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        tooltip: 'Delete',
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => _delete(context, t),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
@@ -99,7 +135,12 @@ class TeachersListScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const TeacherEditorScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const TeacherEditorScreen(),
+            ),
+          );
         },
         icon: const Icon(Icons.add),
         label: const Text('New Teacher'),

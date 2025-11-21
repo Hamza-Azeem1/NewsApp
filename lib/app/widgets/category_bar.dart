@@ -15,8 +15,6 @@ class CategoryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     return SizedBox(
       height: 44,
       child: ListView.separated(
@@ -52,7 +50,7 @@ class CategoryBar extends StatelessWidget {
 }
 
 ///
-/// 🔥 Custom reusable chip with smooth animations & polished UI
+/// 🔥 Updated Custom Chip (with `.withValues` & clean UI)
 ///
 class _StyledChip extends StatelessWidget {
   final String label;
@@ -75,21 +73,21 @@ class _StyledChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: isSelected
-            ? cs.primary.withOpacity(0.18)
-            : cs.surfaceContainerHighest.withOpacity(0.4),
+            ? cs.primary.withValues(alpha: 0.18)
+            : cs.surfaceContainerHighest.withValues(alpha: 0.40),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: isSelected
-              ? cs.primary.withOpacity(0.8)
-              : cs.outlineVariant.withOpacity(0.3),
+              ? cs.primary.withValues(alpha: 0.80)
+              : cs.outlineVariant.withValues(alpha: 0.30),
         ),
         boxShadow: isSelected
             ? [
                 BoxShadow(
-                  color: cs.primary.withOpacity(0.25),
+                  color: cs.primary.withValues(alpha: 0.25),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
-                )
+                ),
               ]
             : [],
       ),
@@ -102,7 +100,9 @@ class _StyledChip extends StatelessWidget {
             style: TextStyle(
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               fontSize: 14,
-              color: isSelected ? cs.primary : cs.onSurface.withOpacity(0.8),
+              color: isSelected
+                  ? cs.primary
+                  : cs.onSurface.withValues(alpha: 0.80),
             ),
           ),
         ),

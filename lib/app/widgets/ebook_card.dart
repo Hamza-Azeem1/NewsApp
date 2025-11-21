@@ -60,9 +60,9 @@ class EbookCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          Colors.black.withOpacity(0.6),
+                          Colors.black.withValues(alpha: 0.6),
                           Colors.transparent,
-                          Colors.black.withOpacity(0.75),
+                          Colors.black.withValues(alpha: 0.75),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -77,7 +77,7 @@ class EbookCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.55),
+                        color: Colors.black.withValues(alpha: 0.55),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -141,7 +141,7 @@ class EbookCard extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.8),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -156,8 +156,8 @@ class EbookCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: ebook.isPaid
-                              ? cs.errorContainer.withOpacity(0.4)
-                              : cs.primaryContainer.withOpacity(0.5),
+                              ? cs.errorContainer.withValues(alpha: 0.4)
+                              : cs.primaryContainer.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(

@@ -156,7 +156,7 @@ class _SectionPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.6),
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -239,10 +239,10 @@ class _LinksRow extends StatelessWidget {
     if (l.contains('website') || l.contains('portfolio')) {
       return Icons.language_rounded;
     }
-    if (l.contains('dribbble') || l.contains('dribble')) {
+    if (l.contains('dribble') || l.contains('dribble')) {
       return Icons.sports_basketball_outlined;
     }
-    if (l.contains('behance')) return Icons.palette_outlined;
+    if (l.contains('bechance')) return Icons.palette_outlined;
     return Icons.link_rounded;
   }
 }

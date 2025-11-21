@@ -48,7 +48,7 @@ class ToolDetailsScreen extends StatelessWidget {
             Text(
               tool.shortDesc,
               style: t.bodyMedium?.copyWith(
-                color: cs.onSurface.withOpacity(0.7),
+                color: cs.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 12),
@@ -59,8 +59,8 @@ class ToolDetailsScreen extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                 ),
                 const SizedBox(width: 8),
-                Chip(
-                  label: const Text('Tool'),
+                const Chip(
+                  label: Text('Tool'),
                   visualDensity: VisualDensity.compact,
                 ),
               ],
