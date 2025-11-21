@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/news_article.dart';
-import '../services/news_engagement_service.dart';
 import 'in_app_browser.dart';
 
 class ArticleScreen extends StatefulWidget {
@@ -14,63 +13,35 @@ class ArticleScreen extends StatefulWidget {
 }
 
 class _ArticleScreenState extends State<ArticleScreen> {
-  final ScrollController _scrollController = ScrollController();
-
-  double _scrollProgress = 0.0;
-  bool _liked = false;
-  bool _bookmarked = false;
+  final ScrollController _scroll = ScrollController();
+  double _progress = 0;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
-    _loadEngagement();
-  }
-
-  Future<void> _loadEngagement() async {
-    final id = widget.article.id;
-    final liked = await NewsEngagementService.isLiked(id);
-    final bookmarked = await NewsEngagementService.isBookmarked(id);
-    if (!mounted) return;
-    setState(() {
-      _liked = liked;
-      _bookmarked = bookmarked;
-    });
+    _scroll.addListener(_onScroll);
   }
 
   void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final max = _scrollController.position.maxScrollExtent;
-    final offset = _scrollController.offset;
-    final value = max > 0 ? (offset / max).clamp(0.0, 1.0) : 0.0;
-    setState(() => _scrollProgress = value);
+    final max = _scroll.position.maxScrollExtent;
+    final offset = _scroll.offset;
+    setState(() {
+      _progress = max > 0 ? (offset / max).clamp(0, 1) : 0;
+    });
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  Future<void> _toggleLike() async {
-    final val = await NewsEngagementService.toggleLike(widget.article.id);
-    if (!mounted) return;
-    setState(() => _liked = val);
-  }
-
-  Future<void> _toggleBookmark() async {
-    final val =
-        await NewsEngagementService.toggleBookmark(widget.article.id);
-    if (!mounted) return;
-    setState(() => _bookmarked = val);
-  }
-
-  void _openFullNews() {
+  void _openFull() {
     final url = widget.article.newsUrl;
     if (url == null || url.isEmpty) return;
 
-    Navigator.of(context).push(
+    Navigator.push(
+      context,
       MaterialPageRoute(
         builder: (_) => InAppBrowser(url: url),
       ),
@@ -79,71 +50,56 @@ class _ArticleScreenState extends State<ArticleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final article = widget.article;
+    final a = widget.article;
     final cs = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final hasUrl =
-        article.newsUrl != null && article.newsUrl!.trim().isNotEmpty;
+    final t = Theme.of(context).textTheme;
 
-    final dateStr =
-        DateFormat('d MMM yyyy • HH:mm').format(article.date);
+    final dateStr = DateFormat('d MMM yyyy • HH:mm').format(a.date);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('News'),
+        title: const Text("News"),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(3),
           child: LinearProgressIndicator(
-            value: _scrollProgress,
+            value: _progress,
             backgroundColor: cs.surfaceContainerHighest,
           ),
         ),
       ),
       body: SingleChildScrollView(
-        controller: _scrollController,
+        controller: _scroll,
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header image
-            if (article.imageUrl.isNotEmpty)
+            if (a.imageUrl.isNotEmpty)
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Image.network(
-                  article.imageUrl,
+                  a.imageUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      const ColoredBox(color: Colors.black26),
-                  loadingBuilder: (context, child, progress) {
-                    if (progress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  },
                 ),
               ),
 
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Category + date
+                  // CATEGORY + DATE
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
+                            horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
                           color: cs.primary.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          article.category,
-                          style: textTheme.labelMedium?.copyWith(
+                          a.category,
+                          style: t.labelMedium?.copyWith(
                             color: cs.primary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -153,98 +109,54 @@ class _ArticleScreenState extends State<ArticleScreen> {
                       Icon(Icons.schedule_rounded,
                           size: 16, color: cs.onSurfaceVariant),
                       const SizedBox(width: 4),
-                      Text(
-                        dateStr,
-                        style: textTheme.labelSmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
+                      Text(dateStr,
+                          style: t.labelSmall
+                              ?.copyWith(color: cs.onSurfaceVariant)),
                     ],
                   ),
+
                   const SizedBox(height: 12),
 
-                  // Title
+                  // TITLE
                   Text(
-                    article.title,
-                    style: textTheme.headlineSmall?.copyWith(
+                    a.title,
+                    style: t.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+
                   const SizedBox(height: 8),
 
-                  // Subtitle
-                  if (article.subtitle.isNotEmpty) ...[
+                  // SUBTITLE
+                  if (a.subtitle.isNotEmpty)
                     Text(
-                      article.subtitle,
-                      style: textTheme.bodyMedium?.copyWith(
+                      a.subtitle,
+                      style: t.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: cs.onSurface.withOpacity(0.8),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                  ],
 
-                  // Like + bookmark row
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: _toggleLike,
-                        icon: Icon(
-                          _liked
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: _liked ? cs.error : cs.onSurfaceVariant,
-                        ),
-                      ),
-                      Text(
-                        _liked ? 'Liked' : 'Like',
-                        style: textTheme.labelMedium,
-                      ),
-                      const SizedBox(width: 20),
-                      IconButton(
-                        onPressed: _toggleBookmark,
-                        icon: Icon(
-                          _bookmarked
-                              ? Icons.bookmark
-                              : Icons.bookmark_border,
-                          color:
-                              _bookmarked ? cs.primary : cs.onSurfaceVariant,
-                        ),
-                      ),
-                      Text(
-                        _bookmarked ? 'Saved' : 'Bookmark',
-                        style: textTheme.labelMedium,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   const Divider(),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // Body text
+                  // BODY
                   Text(
-                    article.description,
-                    style: textTheme.bodyLarge?.copyWith(
-                      height: 1.6,
-                    ),
+                    a.description,
+                    style: t.bodyLarge?.copyWith(height: 1.55),
                   ),
-                  const SizedBox(height: 24),
 
-                  // Read full news button
-                  if (hasUrl)
+                  const SizedBox(height: 28),
+
+                  // LINK BUTTON (only)
+                  if (a.newsUrl != null && a.newsUrl!.isNotEmpty)
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
-                        onPressed: _openFullNews,
-                        icon: const Icon(Icons.open_in_new),
-                        label: const Text('Read full news'),
-                      ),
-                    )
-                  else
-                    Text(
-                      'No external link available for this news.',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: cs.onSurface.withOpacity(0.6),
+                        onPressed: _openFull,
+                        icon: const Icon(Icons.open_in_new_rounded),
+                        label: const Text("Read full article"),
                       ),
                     ),
                 ],

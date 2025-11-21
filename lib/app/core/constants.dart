@@ -16,6 +16,7 @@ const bottomItems = [
   _NavItem('Teachers', Icons.people_outline),
   _NavItem('Courses', Icons.school_outlined),
   _NavItem('eBooks', Icons.menu_book_outlined),
+  _NavItem('Tools', Icons.build_outlined),
 ];
 
 class _NavItem {
