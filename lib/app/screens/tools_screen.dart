@@ -23,6 +23,8 @@ class _ToolsScreenState extends State<ToolsScreen>
   late Animation<double> _searchExpandAnim;
 
   final TextEditingController _searchCtrl = TextEditingController();
+  final FocusNode _searchFocus = FocusNode(); // 👈 NEW
+
   String _searchQuery = '';
 
   @override
@@ -41,6 +43,7 @@ class _ToolsScreenState extends State<ToolsScreen>
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchFocus.dispose(); // 👈 NEW
     _searchAnimCtrl.dispose();
     super.dispose();
   }
@@ -52,10 +55,17 @@ class _ToolsScreenState extends State<ToolsScreen>
 
     if (_showSearchBar) {
       _searchAnimCtrl.forward();
+      // 👇 Request focus so keyboard appears only when search is opened
+      Future.microtask(() {
+        _searchFocus.requestFocus();
+      });
     } else {
       _searchAnimCtrl.reverse();
       _searchCtrl.clear();
-      setState(() => _searchQuery = '');
+      _searchQuery = '';
+      // 👇 Remove focus so keyboard hides
+      _searchFocus.unfocus();
+      setState(() {});
     }
   }
 
@@ -114,7 +124,8 @@ class _ToolsScreenState extends State<ToolsScreen>
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                   child: TextField(
                     controller: _searchCtrl,
-                    autofocus: true,
+                    focusNode: _searchFocus, // 👈 NEW
+                    autofocus: false,        // 👈 IMPORTANT: was true
                     onChanged: (value) {
                       setState(() {
                         _searchQuery = value.trim().toLowerCase();
@@ -136,8 +147,7 @@ class _ToolsScreenState extends State<ToolsScreen>
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30),
                         borderSide: BorderSide(
-                          color:
-                              cs.outline.withValues(alpha: 0.4),
+                          color: cs.outline.withValues(alpha: 0.4),
                         ),
                       ),
                     ),

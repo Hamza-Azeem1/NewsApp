@@ -18,9 +18,11 @@ class _JobsScreenState extends State<JobsScreen>
   bool _showSearchBar = false;
   late AnimationController _searchAnimCtrl;
   late Animation<double> _searchExpandAnim;
-  final TextEditingController _searchCtrl = TextEditingController();
-  String _searchQuery = '';
 
+  final TextEditingController _searchCtrl = TextEditingController();
+  final FocusNode _searchFocus = FocusNode(); // 👈 NEW
+
+  String _searchQuery = '';
   String _selectedCategory = 'All'; // category filter
 
   @override
@@ -37,6 +39,7 @@ class _JobsScreenState extends State<JobsScreen>
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchFocus.dispose(); // 👈 NEW
     _searchAnimCtrl.dispose();
     super.dispose();
   }
@@ -48,10 +51,17 @@ class _JobsScreenState extends State<JobsScreen>
 
     if (_showSearchBar) {
       _searchAnimCtrl.forward();
+      // 👇 Only now request focus so keyboard appears
+      Future.microtask(() {
+        _searchFocus.requestFocus();
+      });
     } else {
       _searchAnimCtrl.reverse();
       _searchCtrl.clear();
-      setState(() => _searchQuery = '');
+      _searchQuery = '';
+      // 👇 Remove focus so keyboard hides
+      _searchFocus.unfocus();
+      setState(() {});
     }
   }
 
@@ -118,7 +128,8 @@ class _JobsScreenState extends State<JobsScreen>
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                   child: TextField(
                     controller: _searchCtrl,
-                    autofocus: true,
+                    focusNode: _searchFocus, // 👈 NEW
+                    autofocus: false,        // 👈 IMPORTANT: was true before
                     onChanged: (value) {
                       setState(() {
                         _searchQuery = value.trim().toLowerCase();
@@ -222,8 +233,7 @@ class _JobsScreenState extends State<JobsScreen>
                               ? 'No jobs available for this filter.'
                               : 'No jobs match "$_searchQuery".',
                           style: t.bodyMedium?.copyWith(
-                            color:
-                                cs.onSurface.withValues(alpha: 0.6),
+                            color: cs.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       )

@@ -111,8 +111,7 @@ class _HomeScreenState extends State<HomeScreen>
         widget.isDark ?? Theme.of(context).brightness == Brightness.dark;
 
     // If parent didn't pass onThemeChanged (e.g. web app), make it a no-op
-    final void Function(bool) onThemeChanged =
-        widget.onThemeChanged ?? (_) {};
+    final void Function(bool) onThemeChanged = widget.onThemeChanged ?? (_) {};
 
     // Decide which tab body to show
     Widget body;
@@ -179,9 +178,7 @@ class _HomeScreenState extends State<HomeScreen>
             ? [
                 IconButton(
                   icon: Icon(
-                    _showSearchBar
-                        ? Icons.close_rounded
-                        : Icons.search_rounded,
+                    _showSearchBar ? Icons.close_rounded : Icons.search_rounded,
                   ),
                   onPressed: _toggleSearchBar,
                 ),
@@ -222,8 +219,7 @@ class _HomeScreenState extends State<HomeScreen>
           sizeFactor: _expandAnim,
           axisAlignment: -1.0,
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
             child: TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
@@ -235,8 +231,7 @@ class _HomeScreenState extends State<HomeScreen>
               decoration: InputDecoration(
                 hintText: 'Search news...',
                 prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: (_searchQuery != null &&
-                        _searchQuery!.isNotEmpty)
+                suffixIcon: (_searchQuery != null && _searchQuery!.isNotEmpty)
                     ? IconButton(
                         icon: const Icon(Icons.close_rounded),
                         onPressed: () {
@@ -248,11 +243,10 @@ class _HomeScreenState extends State<HomeScreen>
                       )
                     : null,
                 filled: true,
-                fillColor:
-                    cs.surfaceContainerHighest.withValues(alpha: 0.35),
+                fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.35),
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                    vertical: 0, horizontal: 16),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(28),
                   borderSide: BorderSide.none,
@@ -285,12 +279,10 @@ class _HomeScreenState extends State<HomeScreen>
             stream: _newsStream,
             builder: (context, snapshot) {
               if (snapshot.hasError) {
-                return Center(
-                    child: Text('Error: ${snapshot.error}'));
+                return Center(child: Text('Error: ${snapshot.error}'));
               }
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                    child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator());
               }
 
               final all = snapshot.data ?? [];
@@ -299,8 +291,7 @@ class _HomeScreenState extends State<HomeScreen>
               final filtered = q.isEmpty
                   ? all
                   : all.where((a) {
-                      bool contains(String s) =>
-                          s.toLowerCase().contains(q);
+                      bool contains(String s) => s.toLowerCase().contains(q);
                       return contains(a.title) ||
                           contains(a.subtitle) ||
                           contains(a.description) ||
@@ -327,12 +318,92 @@ class _HomeScreenState extends State<HomeScreen>
               return Column(
                 children: [
                   // progress bar
+                  // 🔥 Animated, styled progress bar
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: LinearProgressIndicator(value: progress),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Top stories',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.onSurface.withValues(alpha: 0.75),
+                                  ),
+                            ),
+                            Text(
+                              '${(_currentStoryIndex >= filtered.length ? filtered.length : _currentStoryIndex + 1)} / ${filtered.length}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.primary.withValues(alpha: 0.9),
+                                  ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(begin: 0, end: progress),
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, _) {
+                            return Container(
+                              height: 8,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(999),
+                                color: cs.surfaceContainerHigh
+                                    .withValues(alpha: 0.8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: cs.shadow.withValues(alpha: 0.12),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: Stack(
+                                children: [
+                                  // background (already via color)
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: FractionallySizedBox(
+                                      widthFactor: value.clamp(0.0, 1.0),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(999),
+                                          gradient: LinearGradient(
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                            colors: [
+                                              cs.primary
+                                                  .withValues(alpha: 0.95),
+                                              cs.primary
+                                                  .withValues(alpha: 0.65),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
 
                   Expanded(
                     child: PageView.builder(
@@ -350,25 +421,21 @@ class _HomeScreenState extends State<HomeScreen>
                             _autoResetScheduled = true;
 
                             // Capture what we need BEFORE async gap
-                            final messenger =
-                                ScaffoldMessenger.of(context);
-                            final cs2 =
-                                Theme.of(context).colorScheme;
+                            final messenger = ScaffoldMessenger.of(context);
+                            final cs2 = Theme.of(context).colorScheme;
 
                             await Future.delayed(
                               const Duration(seconds: 2),
                             );
 
-                            if (!mounted ||
-                                !_pageController.hasClients) {
+                            if (!mounted || !_pageController.hasClients) {
                               _autoResetScheduled = false;
                               return;
                             }
 
                             await _pageController.animateToPage(
                               0,
-                              duration:
-                                  const Duration(milliseconds: 260),
+                              duration: const Duration(milliseconds: 260),
                               curve: Curves.easeOutCubic,
                             );
 
@@ -384,8 +451,7 @@ class _HomeScreenState extends State<HomeScreen>
                               SnackBar(
                                 behavior: SnackBarBehavior.floating,
                                 margin: const EdgeInsets.all(16),
-                                backgroundColor:
-                                    cs2.surfaceContainerHigh,
+                                backgroundColor: cs2.surfaceContainerHigh,
                                 content: Row(
                                   children: [
                                     Icon(
@@ -404,8 +470,7 @@ class _HomeScreenState extends State<HomeScreen>
                                     ),
                                   ],
                                 ),
-                                duration:
-                                    const Duration(seconds: 2),
+                                duration: const Duration(seconds: 2),
                               ),
                             );
                           }
@@ -413,13 +478,87 @@ class _HomeScreenState extends State<HomeScreen>
                       },
                       itemCount: _totalPages,
                       itemBuilder: (context, index) {
+                        // 📰 Decide which child to show
+                        Widget child;
                         if (index < filtered.length) {
-                          return _NewsPage(article: filtered[index]);
+                          child = _NewsPage(article: filtered[index]);
+                        } else {
+                          child = _EndOfFeed(
+                            label: _selectedCategory == null
+                                ? 'No more news'
+                                : 'No more $_selectedCategory news',
+                          );
                         }
-                        return _EndOfFeed(
-                          label: _selectedCategory == null
-                              ? 'No more news'
-                              : 'No more $_selectedCategory news',
+
+                        // No crazy animation for end-of-feed card
+                        final endIndex = _totalPages - 1;
+                        if (index == endIndex) {
+                          return child;
+                        }
+
+                        return AnimatedBuilder(
+                          animation: _pageController,
+                          builder: (context, _) {
+                            double page = 0;
+                            if (_pageController.hasClients &&
+                                _pageController.position.haveDimensions) {
+                              page = _pageController.page ??
+                                  _pageController.initialPage.toDouble();
+                            } else {
+                              page = _pageController.initialPage.toDouble();
+                            }
+
+                            final delta = index - page;
+
+                            // delta:
+                            //   0   => current page
+                            //   1   => next page
+                            //  -1   => previous (just thrown away)
+                            final isLeaving = delta < 0;
+
+                            // 👉 direction: even index = left, odd index = right
+                            final dir = index.isEven ? -1.0 : 1.0;
+
+                            // strong upward launch for the card being thrown away
+                            final throwUp = isLeaving
+                                ? -120 * (-delta).clamp(0.0, 1.0)
+                                : 0.0;
+
+                            // side throw based on index parity (left/right)
+                            final throwSide = isLeaving
+                                ? dir * 60 * (-delta).clamp(0.0, 1.0)
+                                : 0.0;
+
+                            // base subtle vertical shift as you scroll
+                            final translateY = (delta * 40) + throwUp;
+
+                            // rotation: tilt in direction of throw
+                            final baseRot = delta * 0.10;
+                            final extraRot = isLeaving
+                                ? dir * 0.25 * (-delta).clamp(0.0, 1.0)
+                                : 0.0;
+                            final rotation = baseRot + extraRot;
+
+                            // scale + opacity for depth feel
+                            final scale =
+                                (1 - (delta.abs() * 0.08)).clamp(0.82, 1.0);
+                            final opacity =
+                                (1 - (delta.abs() * 0.4)).clamp(0.0, 1.0);
+
+                            return Opacity(
+                              opacity: opacity,
+                              child: Transform.translate(
+                                offset: Offset(throwSide, translateY),
+                                child: Transform.rotate(
+                                  angle: rotation,
+                                  child: Transform.scale(
+                                    scale: scale,
+                                    child: child,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -474,8 +613,7 @@ class _EndOfFeed extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
                 color: cs.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
