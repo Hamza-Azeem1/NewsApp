@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'firebase_options.dart';
-import 'app/screens/home_screen.dart';
+import 'app/screens/splash_screen.dart';
 import 'app/services/connectivity_service.dart';
 
 
@@ -137,16 +136,17 @@ class _NewsSwipeAppState extends State<NewsSwipeApp> {
     final isDark = _themeMode == ThemeMode.dark;
 
     return MaterialApp(
-      title: 'News Swipe',
-      debugShowCheckedModeBanner: false,
-      themeMode: _themeMode,
-      theme: light,
-      darkTheme: dark,
-      home: HomeScreen(
-        themeMode: _themeMode,
-        isDark: isDark,
-        onThemeChanged: _setTheme,
-      ),
-    );
+  title: 'News Swipe',
+  debugShowCheckedModeBanner: false,
+  themeMode: _themeMode,
+  theme: light,
+  darkTheme: dark,
+  home: SplashScreen(
+    themeMode: _themeMode,
+    isDark: isDark,
+    onThemeChanged: _setTheme,
+  ),
+);
+
   }
 }

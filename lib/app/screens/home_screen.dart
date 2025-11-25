@@ -193,31 +193,48 @@ class _HomeScreenState extends State<HomeScreen>
             );
           },
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'News',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            Text(
-              'Swipe',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w400,
-                  ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: cs.primary,
-                shape: BoxShape.circle,
+        // 🔥 Hero title to match splash screen logo animation
+        title: Hero(
+          tag: 'app-title-hero',
+          flightShuttleBuilder: (flightContext, animation,
+              flightDirection, fromHeroContext, toHeroContext) {
+            return ScaleTransition(
+              scale: CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
               ),
+              child: toHeroContext.widget,
+            );
+          },
+          child: Material(
+            color: Colors.transparent,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'News',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                Text(
+                  'Swipe',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w400,
+                      ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: cs.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
         centerTitle: true,
         actions: _tabIndex == 0
