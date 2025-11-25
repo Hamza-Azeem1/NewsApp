@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../services/courses_repository.dart';
 import '../models/course.dart';
 import '../widgets/course_card.dart';
 import '../search/courses_search_delegate.dart';
+
+// 🔌 Connectivity
+import '../services/connectivity_service.dart';
+import '../widgets/offline_banner.dart';
 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
@@ -20,10 +26,60 @@ class _CoursesScreenState extends State<CoursesScreen> {
   /// Bottom row: dynamic category filter (subject) -> 'All' = no category filter
   String _categoryFilter = 'All';
 
+  // 🔌 Connectivity
+  late StreamSubscription<AppConnectionStatus> _connSub;
+  AppConnectionStatus _connStatus = AppConnectionStatus.online;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _connStatus = ConnectivityService.instance.currentStatus;
+    _connSub = ConnectivityService.instance.statusStream.listen((status) {
+      if (!mounted) return;
+
+      final wasOffline = _connStatus == AppConnectionStatus.offline;
+
+      setState(() => _connStatus = status);
+
+      if (status == AppConnectionStatus.online && wasOffline) {
+        _onCameOnline();
+      }
+    });
+  }
+
+  void _onCameOnline() {
+    final cs = Theme.of(context).colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: cs.surfaceContainerHigh,
+        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Icon(Icons.wifi_rounded, color: cs.primary),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Back online • Updating content'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _connSub.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    // ignore: unused_local_variable
-    final cs = Theme.of(context).colorScheme;
+    //final cs = Theme.of(context).colorScheme;
+    final isOffline = _connStatus == AppConnectionStatus.offline;
 
     return Scaffold(
       appBar: AppBar(
@@ -62,7 +118,11 @@ class _CoursesScreenState extends State<CoursesScreen> {
           // Build dynamic categories from data (except All/Free/Paid)
           final dynamicCats = allCourses
               .map((c) => c.category.trim())
-              .where((c) => c.isNotEmpty && !staticCats.contains(c))
+              .where((c) =>
+                  c.isNotEmpty &&
+                  !staticCats
+                      .map((e) => e.toLowerCase())
+                      .contains(c.toLowerCase()))
               .toSet()
               .toList()
             ..sort();
@@ -72,6 +132,9 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
           return Column(
             children: [
+              // 🔌 Offline banner
+              if (isOffline) const OfflineBanner(),
+
               const SizedBox(height: 8),
 
               // 🔹 Top row: All / Free / Paid
@@ -173,14 +236,15 @@ class _CoursesScreenState extends State<CoursesScreen> {
     // 1) Price filter
     switch (_priceFilter) {
       case 'Free':
-        filtered = filtered.where((c) => c.isPaid == true);
+        filtered = filtered.where((c) => c.isPaid == false).toList();
         break;
+
       case 'Paid':
-        filtered = filtered.where((c) => c.isPaid == false);
+        filtered = filtered.where((c) => c.isPaid == true).toList();
         break;
+
       default:
-        // 'All' -> no price filter
-        break;
+        break; // 'All'
     }
 
     // 2) Category filter
@@ -249,7 +313,9 @@ class _StyledChip extends StatelessWidget {
             style: TextStyle(
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               fontSize: 15.5,
-              color: isSelected ? cs.primary : cs.onSurface.withValues(alpha: 0.85),
+              color: isSelected
+                  ? cs.primary
+                  : cs.onSurface.withValues(alpha: 0.85),
               letterSpacing: 0.2,
             ),
           ),

@@ -19,6 +19,8 @@ dependencies:
   url_launcher: ^6.2.6
   webview_flutter: ^4.7.0
   shared_preferences: ^2.2.2
+  connectivity_plus: ^6.0.0
+  internet_connection_checker: ^1.0.0
 
 dev_dependencies:
   flutter_test:

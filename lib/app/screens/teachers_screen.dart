@@ -1,6 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+
 import '../models/teacher.dart';
 import '../services/teachers_repository.dart';
+
+// 🔌 Connectivity
+import '../services/connectivity_service.dart';
+import '../widgets/offline_banner.dart';
+
 import '../widgets/teacher_card.dart';
 
 class TeachersScreen extends StatefulWidget {
@@ -12,7 +19,7 @@ class TeachersScreen extends StatefulWidget {
 
 class _TeachersScreenState extends State<TeachersScreen>
     with SingleTickerProviderStateMixin {
-  final repo = TeachersRepository();
+  final TeachersRepository repo = TeachersRepository();
 
   String _searchQuery = '';
   bool _showSearchBar = false;
@@ -20,6 +27,10 @@ class _TeachersScreenState extends State<TeachersScreen>
   late AnimationController _animCtrl;
   late Animation<double> _expandAnim;
   late TextEditingController _searchController;
+
+  // 🔌 Connectivity fields
+  late StreamSubscription<AppConnectionStatus> _connSub;
+  AppConnectionStatus _connStatus = AppConnectionStatus.online;
 
   @override
   void initState() {
@@ -36,12 +47,49 @@ class _TeachersScreenState extends State<TeachersScreen>
       parent: _animCtrl,
       curve: Curves.easeInOut,
     );
+
+    // 🔌 Start monitoring connectivity
+    _connStatus = ConnectivityService.instance.currentStatus;
+    _connSub =
+        ConnectivityService.instance.statusStream.listen((status) {
+      if (!mounted) return;
+
+      final wasOffline =
+          _connStatus == AppConnectionStatus.offline;
+
+      setState(() => _connStatus = status);
+
+      if (status == AppConnectionStatus.online && wasOffline) {
+        _onCameOnline();
+      }
+    });
+  }
+
+  void _onCameOnline() {
+    final cs = Theme.of(context).colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: cs.surfaceContainerHigh,
+        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Icon(Icons.wifi_rounded, color: cs.primary),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Back online • Updating content')),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _animCtrl.dispose();
     _searchController.dispose();
+    _connSub.cancel(); // 🔌 IMPORTANT
     super.dispose();
   }
 
@@ -61,6 +109,7 @@ class _TeachersScreenState extends State<TeachersScreen>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final bool isOffline = _connStatus == AppConnectionStatus.offline;
 
     return Scaffold(
       appBar: AppBar(
@@ -73,15 +122,19 @@ class _TeachersScreenState extends State<TeachersScreen>
           ),
         ],
       ),
+
       body: Column(
         children: [
-          // 🔍 Animated search bar (appears when icon tapped)
+          // 🔌 Offline message
+          if (isOffline) const OfflineBanner(),
+
+          // 🔍 Animated search bar
           SizeTransition(
             sizeFactor: _expandAnim,
             axisAlignment: -1.0,
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 8),
               child: TextField(
                 controller: _searchController,
                 textInputAction: TextInputAction.search,
@@ -103,23 +156,22 @@ class _TeachersScreenState extends State<TeachersScreen>
                   fillColor:
                       cs.surfaceContainerHighest.withValues(alpha: 0.35),
                   contentPadding: const EdgeInsets.symmetric(
-                    vertical: 0,
-                    horizontal: 16,
-                  ),
+                      vertical: 0, horizontal: 16),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(28),
                     borderSide: BorderSide.none,
                   ),
                 ),
-                onChanged: (v) =>
-                    setState(() => _searchQuery = v.trim().toLowerCase()),
+                onChanged: (v) => setState(
+                  () => _searchQuery = v.trim().toLowerCase(),
+                ),
               ),
             ),
           ),
 
           const SizedBox(height: 6),
 
-          // List / Grid content
+          // 🔥 Teachers list / grid
           Expanded(
             child: StreamBuilder<List<Teacher>>(
               stream: repo.watchAll(),
@@ -129,6 +181,7 @@ class _TeachersScreenState extends State<TeachersScreen>
                     child: Text('Error: ${snap.error}'),
                   );
                 }
+
                 if (!snap.hasData) {
                   return const Center(
                     child: CircularProgressIndicator(),
@@ -140,14 +193,15 @@ class _TeachersScreenState extends State<TeachersScreen>
 
                 bool contains(String s) =>
                     s.toLowerCase().contains(q);
+
                 bool inList(List<String> l) =>
                     l.any((x) => contains(x));
+
                 bool inMap(Map<String, String> m) =>
                     m.entries.any(
-                      (e) =>
-                          contains(e.key) ||
-                          contains(e.value),
-                    );
+                  (e) =>
+                      contains(e.key) || contains(e.value),
+                );
 
                 final list = q.isEmpty
                     ? all
@@ -171,8 +225,8 @@ class _TeachersScreenState extends State<TeachersScreen>
                     final isMobile = w < 600;
                     final isDesktop = w >= 1100;
 
-                    // Phones: list
                     if (isMobile) {
+                      // Phones → List view
                       return ListView.separated(
                         padding: const EdgeInsets.all(12),
                         itemCount: list.length,
@@ -183,7 +237,7 @@ class _TeachersScreenState extends State<TeachersScreen>
                       );
                     }
 
-                    // Tablet / Desktop: grid
+                    // Tablet / Desktop → Grid view
                     final crossAxisCount = isDesktop ? 3 : 2;
                     const tileHeight = 420.0;
 

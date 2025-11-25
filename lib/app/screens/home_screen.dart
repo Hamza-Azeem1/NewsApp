@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:news_swipe/app/screens/courses_screen.dart';
 import '../models/news_article.dart';
 import '../models/app_category.dart';
 import '../services/news_repository.dart';
+import '../services/connectivity_service.dart';
 import '../widgets/news_card.dart';
 import '../widgets/category_bar.dart';
 import '../widgets/side_drawer.dart';
 import '../widgets/footer_nav.dart';
+import '../widgets/offline_banner.dart';
 import 'teachers_screen.dart';
 import 'ebooks_screen.dart';
 import 'tools_screen.dart';
@@ -48,6 +51,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   bool _autoResetScheduled = false; // to avoid stacking multiple resets
 
+  // 🔌 connectivity
+  late StreamSubscription<AppConnectionStatus> _connSub;
+  AppConnectionStatus _connStatus = AppConnectionStatus.online;
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +71,44 @@ class _HomeScreenState extends State<HomeScreen>
       parent: _animCtrl,
       curve: Curves.easeInOut,
     );
+
+    // connectivity subscription
+    _connStatus = ConnectivityService.instance.currentStatus;
+    _connSub =
+        ConnectivityService.instance.statusStream.listen((status) {
+      if (!mounted) return;
+      final wasOffline =
+          _connStatus == AppConnectionStatus.offline;
+      setState(() => _connStatus = status);
+
+      if (status == AppConnectionStatus.online && wasOffline) {
+        _onCameOnline();
+      }
+    });
+  }
+
+  void _onCameOnline() {
+    final cs = Theme.of(context).colorScheme;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: cs.surfaceContainerHigh,
+        content: Row(
+          children: [
+            Icon(Icons.wifi_rounded, color: cs.primary),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Back online • Updating feed'),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    // Firestore streams will auto-refresh; just ensure we’re still using the right stream.
+    _updateNewsStream();
   }
 
   @override
@@ -71,6 +116,7 @@ class _HomeScreenState extends State<HomeScreen>
     _pageController.dispose();
     _animCtrl.dispose();
     _searchController.dispose();
+    _connSub.cancel();
     super.dispose();
   }
 
@@ -106,12 +152,11 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    // If parent didn't pass isDark, infer from current theme
     final bool isDark =
         widget.isDark ?? Theme.of(context).brightness == Brightness.dark;
 
-    // If parent didn't pass onThemeChanged (e.g. web app), make it a no-op
-    final void Function(bool) onThemeChanged = widget.onThemeChanged ?? (_) {};
+    final void Function(bool) onThemeChanged =
+        widget.onThemeChanged ?? (_) {};
 
     // Decide which tab body to show
     Widget body;
@@ -137,7 +182,8 @@ class _HomeScreenState extends State<HomeScreen>
                 onTap: () => Scaffold.of(context).openDrawer(),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                    color:
+                        cs.surfaceContainerHighest.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   padding: const EdgeInsets.all(8),
@@ -178,7 +224,9 @@ class _HomeScreenState extends State<HomeScreen>
             ? [
                 IconButton(
                   icon: Icon(
-                    _showSearchBar ? Icons.close_rounded : Icons.search_rounded,
+                    _showSearchBar
+                        ? Icons.close_rounded
+                        : Icons.search_rounded,
                   ),
                   onPressed: _toggleSearchBar,
                 ),
@@ -211,15 +259,19 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildHomeFeed() {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final bool isOffline = _connStatus == AppConnectionStatus.offline;
 
     return Column(
       children: [
+        if (isOffline) const OfflineBanner(),
+
         // 🔍 Animated Search Bar
         SizeTransition(
           sizeFactor: _expandAnim,
           axisAlignment: -1.0,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4),
             child: TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
@@ -231,7 +283,8 @@ class _HomeScreenState extends State<HomeScreen>
               decoration: InputDecoration(
                 hintText: 'Search news...',
                 prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: (_searchQuery != null && _searchQuery!.isNotEmpty)
+                suffixIcon: (_searchQuery != null &&
+                        _searchQuery!.isNotEmpty)
                     ? IconButton(
                         icon: const Icon(Icons.close_rounded),
                         onPressed: () {
@@ -243,10 +296,11 @@ class _HomeScreenState extends State<HomeScreen>
                       )
                     : null,
                 filled: true,
-                fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+                fillColor:
+                    cs.surfaceContainerHighest.withValues(alpha: 0.35),
                 isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                contentPadding: const EdgeInsets.symmetric(
+                    vertical: 0, horizontal: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(28),
                   borderSide: BorderSide.none,
@@ -279,10 +333,13 @@ class _HomeScreenState extends State<HomeScreen>
             stream: _newsStream,
             builder: (context, snapshot) {
               if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                return Center(
+                    child: Text('Error: ${snapshot.error}'));
               }
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  !snapshot.hasData) {
+                return const Center(
+                    child: CircularProgressIndicator());
               }
 
               final all = snapshot.data ?? [];
@@ -291,7 +348,8 @@ class _HomeScreenState extends State<HomeScreen>
               final filtered = q.isEmpty
                   ? all
                   : all.where((a) {
-                      bool contains(String s) => s.toLowerCase().contains(q);
+                      bool contains(String s) =>
+                          s.toLowerCase().contains(q);
                       return contains(a.title) ||
                           contains(a.subtitle) ||
                           contains(a.description) ||
@@ -317,15 +375,17 @@ class _HomeScreenState extends State<HomeScreen>
 
               return Column(
                 children: [
-                  // progress bar
                   // 🔥 Animated, styled progress bar
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                    padding:
+                        const EdgeInsets.fromLTRB(16, 8, 16, 4),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               'Top stories',
@@ -334,7 +394,8 @@ class _HomeScreenState extends State<HomeScreen>
                                   .labelMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: cs.onSurface.withValues(alpha: 0.75),
+                                    color: cs.onSurface
+                                        .withValues(alpha: 0.75),
                                   ),
                             ),
                             Text(
@@ -344,51 +405,71 @@ class _HomeScreenState extends State<HomeScreen>
                                   .labelSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: cs.primary.withValues(alpha: 0.9),
+                                    color: cs.primary.withValues(
+                                        alpha: 0.9),
                                   ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 6),
                         TweenAnimationBuilder<double>(
-                          tween: Tween<double>(begin: 0, end: progress),
-                          duration: const Duration(milliseconds: 260),
+                          tween: Tween<double>(
+                              begin: 0, end: progress),
+                          duration: const Duration(
+                              milliseconds: 260),
                           curve: Curves.easeOutCubic,
                           builder: (context, value, _) {
                             return Container(
                               height: 8,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(999),
-                                color: cs.surfaceContainerHigh
+                                borderRadius:
+                                    BorderRadius.circular(999),
+                                color: cs
+                                    .surfaceContainerHigh
                                     .withValues(alpha: 0.8),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: cs.shadow.withValues(alpha: 0.12),
+                                    color: cs.shadow.withValues(
+                                        alpha: 0.12),
                                     blurRadius: 10,
-                                    offset: const Offset(0, 4),
+                                    offset:
+                                        const Offset(0, 4),
                                   ),
                                 ],
                               ),
-                              clipBehavior: Clip.antiAlias,
+                              clipBehavior:
+                                  Clip.antiAlias,
                               child: Stack(
                                 children: [
-                                  // background (already via color)
                                   Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: FractionallySizedBox(
-                                      widthFactor: value.clamp(0.0, 1.0),
+                                    alignment:
+                                        Alignment.centerLeft,
+                                    child:
+                                        FractionallySizedBox(
+                                      widthFactor: value
+                                          .clamp(0.0, 1.0),
                                       child: Container(
-                                        decoration: BoxDecoration(
+                                        decoration:
+                                            BoxDecoration(
                                           borderRadius:
-                                              BorderRadius.circular(999),
-                                          gradient: LinearGradient(
-                                            begin: Alignment.centerLeft,
-                                            end: Alignment.centerRight,
+                                              BorderRadius
+                                                  .circular(
+                                                      999),
+                                          gradient:
+                                              LinearGradient(
+                                            begin: Alignment
+                                                .centerLeft,
+                                            end: Alignment
+                                                .centerRight,
                                             colors: [
                                               cs.primary
-                                                  .withValues(alpha: 0.95),
+                                                  .withValues(
+                                                      alpha:
+                                                          0.95),
                                               cs.primary
-                                                  .withValues(alpha: 0.65),
+                                                  .withValues(
+                                                      alpha:
+                                                          0.65),
                                             ],
                                           ),
                                         ),
@@ -412,30 +493,40 @@ class _HomeScreenState extends State<HomeScreen>
                       physics: const BouncingScrollPhysics(),
                       onPageChanged: (i) async {
                         setState(() {
-                          _currentStoryIndex = i.clamp(0, endIndex);
+                          _currentStoryIndex =
+                              i.clamp(0, endIndex);
                         });
 
                         // When user reaches end-of-feed page
-                        if (i == endIndex && _pageController.hasClients) {
+                        if (i == endIndex &&
+                            _pageController.hasClients) {
                           if (!_autoResetScheduled) {
                             _autoResetScheduled = true;
 
-                            // Capture what we need BEFORE async gap
-                            final messenger = ScaffoldMessenger.of(context);
-                            final cs2 = Theme.of(context).colorScheme;
+                            final messenger =
+                                ScaffoldMessenger.of(
+                                    context);
+                            final cs2 =
+                                Theme.of(context)
+                                    .colorScheme;
 
                             await Future.delayed(
                               const Duration(seconds: 2),
                             );
 
-                            if (!mounted || !_pageController.hasClients) {
-                              _autoResetScheduled = false;
+                            if (!mounted ||
+                                !_pageController
+                                    .hasClients) {
+                              _autoResetScheduled =
+                                  false;
                               return;
                             }
 
-                            await _pageController.animateToPage(
+                            await _pageController
+                                .animateToPage(
                               0,
-                              duration: const Duration(milliseconds: 260),
+                              duration: const Duration(
+                                  milliseconds: 260),
                               curve: Curves.easeOutCubic,
                             );
 
@@ -443,34 +534,46 @@ class _HomeScreenState extends State<HomeScreen>
 
                             setState(() {
                               _currentStoryIndex = 0;
-                              _autoResetScheduled = false;
+                              _autoResetScheduled =
+                                  false;
                             });
 
-                            // Modern floating snack (using captured messenger)
                             messenger.showSnackBar(
                               SnackBar(
-                                behavior: SnackBarBehavior.floating,
-                                margin: const EdgeInsets.all(16),
-                                backgroundColor: cs2.surfaceContainerHigh,
+                                behavior: SnackBarBehavior
+                                    .floating,
+                                margin:
+                                    const EdgeInsets.all(
+                                        16),
+                                backgroundColor: cs2
+                                    .surfaceContainerHigh,
                                 content: Row(
                                   children: [
                                     Icon(
-                                      Icons.refresh_rounded,
-                                      color: cs2.primary,
+                                      Icons
+                                          .refresh_rounded,
+                                      color:
+                                          cs2.primary,
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(
+                                        width: 12),
                                     Expanded(
                                       child: Text(
                                         'Back to top • Latest stories',
                                         style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: cs2.onSurface,
+                                          fontWeight:
+                                              FontWeight
+                                                  .w600,
+                                          color: cs2
+                                              .onSurface,
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                duration: const Duration(seconds: 2),
+                                duration:
+                                    const Duration(
+                                        seconds: 2),
                               ),
                             );
                           }
@@ -478,20 +581,22 @@ class _HomeScreenState extends State<HomeScreen>
                       },
                       itemCount: _totalPages,
                       itemBuilder: (context, index) {
-                        // 📰 Decide which child to show
                         Widget child;
                         if (index < filtered.length) {
-                          child = _NewsPage(article: filtered[index]);
+                          child = _NewsPage(
+                              article:
+                                  filtered[index]);
                         } else {
                           child = _EndOfFeed(
-                            label: _selectedCategory == null
+                            label: _selectedCategory ==
+                                    null
                                 ? 'No more news'
                                 : 'No more $_selectedCategory news',
                           );
                         }
 
-                        // No crazy animation for end-of-feed card
-                        final endIndex = _totalPages - 1;
+                        final endIndex =
+                            _totalPages - 1;
                         if (index == endIndex) {
                           return child;
                         }
@@ -500,58 +605,84 @@ class _HomeScreenState extends State<HomeScreen>
                           animation: _pageController,
                           builder: (context, _) {
                             double page = 0;
-                            if (_pageController.hasClients &&
-                                _pageController.position.haveDimensions) {
-                              page = _pageController.page ??
-                                  _pageController.initialPage.toDouble();
+                            if (_pageController
+                                    .hasClients &&
+                                _pageController.position
+                                    .haveDimensions) {
+                              page = _pageController
+                                      .page ??
+                                  _pageController
+                                      .initialPage
+                                      .toDouble();
                             } else {
-                              page = _pageController.initialPage.toDouble();
+                              page = _pageController
+                                  .initialPage
+                                  .toDouble();
                             }
 
                             final delta = index - page;
+                            final isLeaving =
+                                delta < 0;
 
-                            // delta:
-                            //   0   => current page
-                            //   1   => next page
-                            //  -1   => previous (just thrown away)
-                            final isLeaving = delta < 0;
+                            // even = left, odd = right
+                            final dir = index.isEven
+                                ? -1.0
+                                : 1.0;
 
-                            // 👉 direction: even index = left, odd index = right
-                            final dir = index.isEven ? -1.0 : 1.0;
+                            final throwUp =
+                                isLeaving
+                                    ? -120 *
+                                        (-delta).clamp(
+                                            0.0, 1.0)
+                                    : 0.0;
 
-                            // strong upward launch for the card being thrown away
-                            final throwUp = isLeaving
-                                ? -120 * (-delta).clamp(0.0, 1.0)
-                                : 0.0;
+                            final throwSide =
+                                isLeaving
+                                    ? dir *
+                                        60 *
+                                        (-delta).clamp(
+                                            0.0, 1.0)
+                                    : 0.0;
 
-                            // side throw based on index parity (left/right)
-                            final throwSide = isLeaving
-                                ? dir * 60 * (-delta).clamp(0.0, 1.0)
-                                : 0.0;
+                            final translateY =
+                                (delta * 40) +
+                                    throwUp;
 
-                            // base subtle vertical shift as you scroll
-                            final translateY = (delta * 40) + throwUp;
+                            final baseRot =
+                                delta * 0.10;
+                            final extraRot =
+                                isLeaving
+                                    ? dir *
+                                        0.25 *
+                                        (-delta).clamp(
+                                            0.0, 1.0)
+                                    : 0.0;
+                            final rotation =
+                                baseRot +
+                                    extraRot;
 
-                            // rotation: tilt in direction of throw
-                            final baseRot = delta * 0.10;
-                            final extraRot = isLeaving
-                                ? dir * 0.25 * (-delta).clamp(0.0, 1.0)
-                                : 0.0;
-                            final rotation = baseRot + extraRot;
-
-                            // scale + opacity for depth feel
-                            final scale =
-                                (1 - (delta.abs() * 0.08)).clamp(0.82, 1.0);
-                            final opacity =
-                                (1 - (delta.abs() * 0.4)).clamp(0.0, 1.0);
+                            final scale = (1 -
+                                    (delta.abs() *
+                                        0.08))
+                                .clamp(
+                                    0.82, 1.0);
+                            final opacity = (1 -
+                                    (delta.abs() *
+                                        0.4))
+                                .clamp(0.0, 1.0);
 
                             return Opacity(
                               opacity: opacity,
-                              child: Transform.translate(
-                                offset: Offset(throwSide, translateY),
-                                child: Transform.rotate(
+                              child: Transform
+                                  .translate(
+                                offset: Offset(
+                                    throwSide,
+                                    translateY),
+                                child: Transform
+                                    .rotate(
                                   angle: rotation,
-                                  child: Transform.scale(
+                                  child:
+                                      Transform.scale(
                                     scale: scale,
                                     child: child,
                                   ),
@@ -608,12 +739,14 @@ class _EndOfFeed extends StatelessWidget {
       ),
       alignment: Alignment.bottomCenter,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 96, left: 16, right: 16),
+        padding:
+            const EdgeInsets.only(bottom: 96, left: 16, right: 16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
                 color: cs.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),

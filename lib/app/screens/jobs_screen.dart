@@ -1,8 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+
 import '../models/job.dart';
 import '../services/jobs_repository.dart';
 import '../widgets/job_card.dart';
 import 'job_details_screen.dart';
+
+// 🔌 Connectivity
+import '../services/connectivity_service.dart';
+import '../widgets/offline_banner.dart';
 
 class JobsScreen extends StatefulWidget {
   const JobsScreen({super.key});
@@ -20,27 +26,71 @@ class _JobsScreenState extends State<JobsScreen>
   late Animation<double> _searchExpandAnim;
 
   final TextEditingController _searchCtrl = TextEditingController();
-  final FocusNode _searchFocus = FocusNode(); // 👈 NEW
+  final FocusNode _searchFocus = FocusNode();
 
   String _searchQuery = '';
   String _selectedCategory = 'All'; // category filter
 
+  // 🔌 Connectivity
+  late StreamSubscription<AppConnectionStatus> _connSub;
+  AppConnectionStatus _connStatus = AppConnectionStatus.online;
+
   @override
   void initState() {
     super.initState();
+
     _searchAnimCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 220),
     );
     _searchExpandAnim =
         CurvedAnimation(parent: _searchAnimCtrl, curve: Curves.easeInOut);
+
+    // 🔌 Listen to connectivity changes
+    _connStatus = ConnectivityService.instance.currentStatus;
+    _connSub =
+        ConnectivityService.instance.statusStream.listen((status) {
+      if (!mounted) return;
+
+      final wasOffline =
+          _connStatus == AppConnectionStatus.offline;
+
+      setState(() => _connStatus = status);
+
+      if (status == AppConnectionStatus.online && wasOffline) {
+        _onCameOnline();
+      }
+    });
+  }
+
+  void _onCameOnline() {
+    final cs = Theme.of(context).colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: cs.surfaceContainerHigh,
+        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Icon(Icons.wifi_rounded, color: cs.primary),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Back online • Updating content'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
-    _searchFocus.dispose(); // 👈 NEW
+    _searchFocus.dispose();
     _searchAnimCtrl.dispose();
+    _connSub.cancel(); // 🔌 important
     super.dispose();
   }
 
@@ -51,7 +101,6 @@ class _JobsScreenState extends State<JobsScreen>
 
     if (_showSearchBar) {
       _searchAnimCtrl.forward();
-      // 👇 Only now request focus so keyboard appears
       Future.microtask(() {
         _searchFocus.requestFocus();
       });
@@ -59,7 +108,6 @@ class _JobsScreenState extends State<JobsScreen>
       _searchAnimCtrl.reverse();
       _searchCtrl.clear();
       _searchQuery = '';
-      // 👇 Remove focus so keyboard hides
       _searchFocus.unfocus();
       setState(() {});
     }
@@ -68,6 +116,7 @@ class _JobsScreenState extends State<JobsScreen>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isOffline = _connStatus == AppConnectionStatus.offline;
 
     return Scaffold(
       appBar: AppBar(
@@ -120,6 +169,9 @@ class _JobsScreenState extends State<JobsScreen>
 
           return Column(
             children: [
+              // 🔌 Offline banner
+              if (isOffline) const OfflineBanner(),
+
               // 🔍 Expandable Search Bar
               SizeTransition(
                 sizeFactor: _searchExpandAnim,
@@ -128,8 +180,8 @@ class _JobsScreenState extends State<JobsScreen>
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                   child: TextField(
                     controller: _searchCtrl,
-                    focusNode: _searchFocus, // 👈 NEW
-                    autofocus: false,        // 👈 IMPORTANT: was true before
+                    focusNode: _searchFocus,
+                    autofocus: false,
                     onChanged: (value) {
                       setState(() {
                         _searchQuery = value.trim().toLowerCase();
@@ -190,7 +242,6 @@ class _JobsScreenState extends State<JobsScreen>
                           isSelected: selected,
                           onTap: () {
                             setState(() {
-                              // tap again to clear
                               if (_selectedCategory == cat) {
                                 _selectedCategory = 'All';
                               } else {

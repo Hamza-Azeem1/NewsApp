@@ -57,7 +57,7 @@ For clarification or questions, please reach out through the support section wit
 """,
               style: t.bodyMedium?.copyWith(
                 height: 1.55,
-                color: cs.onSurface.withOpacity(0.85),
+                color: cs.onSurface.withValues(alpha: 0.85),
               ),
             ),
           ],

@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+
 import '../services/ebooks_repository.dart';
 import '../models/ebook.dart';
 import '../models/app_category.dart';
 import '../widgets/ebook_card.dart';
 import '../widgets/category_bar.dart';
+
+// 🔌 Connectivity
+import '../services/connectivity_service.dart';
+import '../widgets/offline_banner.dart';
 
 class EbooksScreen extends StatefulWidget {
   const EbooksScreen({super.key});
@@ -25,8 +31,11 @@ class _EbooksScreenState extends State<EbooksScreen>
 
   late AnimationController _animCtrl;
   late Animation<double> _expandAnim;
-
   late TextEditingController _searchController;
+
+  // 🔌 Connectivity
+  late StreamSubscription<AppConnectionStatus> _connSub;
+  AppConnectionStatus _connStatus = AppConnectionStatus.online;
 
   @override
   void initState() {
@@ -38,10 +47,47 @@ class _EbooksScreenState extends State<EbooksScreen>
       vsync: this,
       duration: const Duration(milliseconds: 250),
     );
-
     _expandAnim = CurvedAnimation(
       parent: _animCtrl,
       curve: Curves.easeInOut,
+    );
+
+    // 🔌 Subscribe to connectivity
+    _connStatus = ConnectivityService.instance.currentStatus;
+    _connSub =
+        ConnectivityService.instance.statusStream.listen((status) {
+      if (!mounted) return;
+
+      final wasOffline =
+          _connStatus == AppConnectionStatus.offline;
+
+      setState(() => _connStatus = status);
+
+      if (status == AppConnectionStatus.online && wasOffline) {
+        _onCameOnline();
+      }
+    });
+  }
+
+  void _onCameOnline() {
+    final cs = Theme.of(context).colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: cs.surfaceContainerHigh,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Icon(Icons.wifi_rounded, color: cs.primary),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Back online • Updating content'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -49,6 +95,7 @@ class _EbooksScreenState extends State<EbooksScreen>
   void dispose() {
     _animCtrl.dispose();
     _searchController.dispose();
+    _connSub.cancel(); // 🔌 IMPORTANT
     super.dispose();
   }
 
@@ -69,8 +116,9 @@ class _EbooksScreenState extends State<EbooksScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isOffline = _connStatus == AppConnectionStatus.offline;
 
-    // First row categories: only Free / Paid — CategoryBar itself provides "All"
+    // First row: Free / Paid (CategoryBar auto-includes “All”)
     final priceCategories = <AppCategory>[
       AppCategory(id: 'Free', name: 'Free'),
       AppCategory(id: 'Paid', name: 'Paid'),
@@ -86,6 +134,7 @@ class _EbooksScreenState extends State<EbooksScreen>
           ),
         ],
       ),
+
       body: StreamBuilder<List<Ebook>>(
         stream: _ebooksRepository.streamEbooks(),
         builder: (context, snapshot) {
@@ -95,12 +144,14 @@ class _EbooksScreenState extends State<EbooksScreen>
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Text('Error: ${snapshot.error}'),
+            );
           }
 
           final ebooks = snapshot.data ?? [];
 
-          // ---- Build category list (dynamic subjects) ----
+          // ---- Dynamic category list ----
           final uniqueNames = ebooks
               .map((e) => e.category.trim())
               .where((c) => c.isNotEmpty)
@@ -112,10 +163,10 @@ class _EbooksScreenState extends State<EbooksScreen>
               .map((name) => AppCategory(id: name, name: name))
               .toList();
 
-          // start from all
+          // Start with all
           List<Ebook> filtered = List.of(ebooks);
 
-          // ---- Filter by price (All / Free / Paid) ----
+          // ---- Price filter ----
           switch (_priceFilter.toLowerCase()) {
             case 'free':
               filtered = filtered.where((e) => !e.isPaid).toList();
@@ -123,12 +174,11 @@ class _EbooksScreenState extends State<EbooksScreen>
             case 'paid':
               filtered = filtered.where((e) => e.isPaid).toList();
               break;
-            case 'all':
             default:
               break;
           }
 
-          // ---- Filter by category ----
+          // ---- Category filter ----
           if (_selectedCategoryName != null &&
               _selectedCategoryName!.isNotEmpty) {
             filtered = filtered
@@ -136,7 +186,7 @@ class _EbooksScreenState extends State<EbooksScreen>
                 .toList();
           }
 
-          // ---- Filter by search ----
+          // ---- Search filter ----
           final q = _searchQuery.trim().toLowerCase();
           if (q.isNotEmpty) {
             filtered = filtered.where((e) {
@@ -149,7 +199,10 @@ class _EbooksScreenState extends State<EbooksScreen>
 
           return Column(
             children: [
-              // 🔍 Animated Search Bar
+              // 🔌 Offline
+              if (isOffline) const OfflineBanner(),
+
+              // 🔍 Search Bar
               SizeTransition(
                 sizeFactor: _expandAnim,
                 axisAlignment: -1.0,
@@ -175,7 +228,8 @@ class _EbooksScreenState extends State<EbooksScreen>
                             )
                           : null,
                       filled: true,
-                      fillColor: theme.colorScheme.surfaceContainerHighest,
+                      fillColor:
+                          theme.colorScheme.surfaceContainerHighest,
                       isDense: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -188,11 +242,11 @@ class _EbooksScreenState extends State<EbooksScreen>
 
               const SizedBox(height: 8),
 
-              /// 1️⃣ PRICE BAR: (CategoryBar's built-in "All") + Free + Paid
+              // 🔹 PRICE BAR (All + Free + Paid)
               CategoryBar(
                 categories: priceCategories,
-                // null => "All" chip selected
-                selected: _priceFilter == 'All' ? null : _priceFilter,
+                selected:
+                    _priceFilter == 'All' ? null : _priceFilter,
                 onSelect: (name) {
                   setState(() {
                     _priceFilter = name ?? 'All';
@@ -202,15 +256,16 @@ class _EbooksScreenState extends State<EbooksScreen>
 
               const SizedBox(height: 4),
 
-              /// 2️⃣ CATEGORY BAR: dynamic categories — WITHOUT "All"
+              // 🔹 Dynamic categories
               if (categories.isNotEmpty)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 4),
                   child: Row(
                     children: categories.map((cat) {
-                      final isSelected = _selectedCategoryName == cat.name;
+                      final isSelected =
+                          _selectedCategoryName == cat.name;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
@@ -218,12 +273,8 @@ class _EbooksScreenState extends State<EbooksScreen>
                           selected: isSelected,
                           onSelected: (_) {
                             setState(() {
-                              // tap again to clear category filter
-                              if (isSelected) {
-                                _selectedCategoryName = null;
-                              } else {
-                                _selectedCategoryName = cat.name;
-                              }
+                              _selectedCategoryName =
+                                  isSelected ? null : cat.name;
                             });
                           },
                         ),
@@ -234,7 +285,7 @@ class _EbooksScreenState extends State<EbooksScreen>
 
               const SizedBox(height: 8),
 
-              /// BOOK LIST
+              // 🔹 E-BOOK LIST
               Expanded(
                 child: filtered.isEmpty
                     ? const Center(child: Text('No ebooks found.'))

@@ -1,8 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+
 import '../models/tool.dart';
 import '../services/tools_repository.dart';
 import '../widgets/tool_card.dart';
 import 'tool_details_screen.dart';
+
+// 🔌 Connectivity
+import '../services/connectivity_service.dart';
+import '../widgets/offline_banner.dart';
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({super.key});
@@ -15,17 +21,21 @@ class _ToolsScreenState extends State<ToolsScreen>
     with SingleTickerProviderStateMixin {
   final _repo = ToolsRepository.instance;
 
-  String _priceFilter = 'All';    // All | Free | Paid (top row)
-  String _categoryFilter = 'All'; // dynamic category (bottom row)
+  String _priceFilter = 'All'; // All | Free | Paid
+  String _categoryFilter = 'All';
   bool _showSearchBar = false;
 
   late AnimationController _searchAnimCtrl;
   late Animation<double> _searchExpandAnim;
 
   final TextEditingController _searchCtrl = TextEditingController();
-  final FocusNode _searchFocus = FocusNode(); // 👈 NEW
+  final FocusNode _searchFocus = FocusNode();
 
   String _searchQuery = '';
+
+  // 🔌 Connectivity
+  late StreamSubscription<AppConnectionStatus> _connSub;
+  AppConnectionStatus _connStatus = AppConnectionStatus.online;
 
   @override
   void initState() {
@@ -38,13 +48,52 @@ class _ToolsScreenState extends State<ToolsScreen>
 
     _searchExpandAnim =
         CurvedAnimation(parent: _searchAnimCtrl, curve: Curves.easeInOut);
+
+    // 🔌 Connectivity initialization
+    _connStatus = ConnectivityService.instance.currentStatus;
+    _connSub =
+        ConnectivityService.instance.statusStream.listen((status) {
+      if (!mounted) return;
+
+      final wasOffline =
+          _connStatus == AppConnectionStatus.offline;
+
+      setState(() => _connStatus = status);
+
+      if (status == AppConnectionStatus.online && wasOffline) {
+        _onCameOnline();
+      }
+    });
+  }
+
+  void _onCameOnline() {
+    final cs = Theme.of(context).colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        backgroundColor: cs.surfaceContainerHigh,
+        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            Icon(Icons.wifi_rounded, color: cs.primary),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Back online • Updating content'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
-    _searchFocus.dispose(); // 👈 NEW
+    _searchFocus.dispose();
     _searchAnimCtrl.dispose();
+    _connSub.cancel(); // 🔌 VERY IMPORTANT
     super.dispose();
   }
 
@@ -55,7 +104,6 @@ class _ToolsScreenState extends State<ToolsScreen>
 
     if (_showSearchBar) {
       _searchAnimCtrl.forward();
-      // 👇 Request focus so keyboard appears only when search is opened
       Future.microtask(() {
         _searchFocus.requestFocus();
       });
@@ -63,7 +111,6 @@ class _ToolsScreenState extends State<ToolsScreen>
       _searchAnimCtrl.reverse();
       _searchCtrl.clear();
       _searchQuery = '';
-      // 👇 Remove focus so keyboard hides
       _searchFocus.unfocus();
       setState(() {});
     }
@@ -73,6 +120,7 @@ class _ToolsScreenState extends State<ToolsScreen>
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
+    final isOffline = _connStatus == AppConnectionStatus.offline;
 
     return Scaffold(
       appBar: AppBar(
@@ -99,7 +147,7 @@ class _ToolsScreenState extends State<ToolsScreen>
 
           final allTools = snapshot.data ?? [];
 
-          // Dynamic categories from tools (excluding any variation of All/Free/Paid)
+          // Dynamic categories excluding reserved ones
           final dynamicCats = allTools
               .map((t) => t.category.trim())
               .where((c) {
@@ -111,21 +159,21 @@ class _ToolsScreenState extends State<ToolsScreen>
               .toList()
             ..sort();
 
-          // Apply filters + search
           final filtered = _applyFilters(allTools);
 
           return Column(
             children: [
+              if (isOffline) const OfflineBanner(),
+
               // 🔍 Expandable Search Bar
               SizeTransition(
                 sizeFactor: _searchExpandAnim,
-                axisAlignment: -1.0,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                   child: TextField(
                     controller: _searchCtrl,
-                    focusNode: _searchFocus, // 👈 NEW
-                    autofocus: false,        // 👈 IMPORTANT: was true
+                    focusNode: _searchFocus,
+                    autofocus: false,
                     onChanged: (value) {
                       setState(() {
                         _searchQuery = value.trim().toLowerCase();
@@ -157,7 +205,7 @@ class _ToolsScreenState extends State<ToolsScreen>
 
               const SizedBox(height: 4),
 
-              // Top row: All / Free / Paid
+              // Price filter chips
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -172,7 +220,6 @@ class _ToolsScreenState extends State<ToolsScreen>
                         onTap: () {
                           setState(() {
                             if (cat == 'All') {
-                              // ✅ Reset all filters when All is tapped
                               _priceFilter = 'All';
                               _categoryFilter = 'All';
                             } else {
@@ -186,7 +233,7 @@ class _ToolsScreenState extends State<ToolsScreen>
                 ),
               ),
 
-              // Bottom row: dynamic categories
+              // Category chips
               if (dynamicCats.isNotEmpty)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -201,7 +248,6 @@ class _ToolsScreenState extends State<ToolsScreen>
                           isSelected: isSelected,
                           onTap: () {
                             setState(() {
-                              // tap again to clear only category filter
                               if (_categoryFilter == cat) {
                                 _categoryFilter = 'All';
                               } else {
@@ -217,7 +263,7 @@ class _ToolsScreenState extends State<ToolsScreen>
 
               const SizedBox(height: 4),
 
-              // List
+              // List of tools
               Expanded(
                 child: filtered.isEmpty
                     ? Center(
@@ -260,11 +306,11 @@ class _ToolsScreenState extends State<ToolsScreen>
     );
   }
 
-  // 🧠 Apply price + category + search
+  // Apply filters
   List<Tool> _applyFilters(List<Tool> list) {
     Iterable<Tool> filtered = list;
 
-    // 1) Price filter
+    // Price filter
     switch (_priceFilter) {
       case 'Free':
         filtered = filtered.where((t) => t.isFree);
@@ -273,10 +319,10 @@ class _ToolsScreenState extends State<ToolsScreen>
         filtered = filtered.where((t) => !t.isFree);
         break;
       default:
-        break; // All -> no price filter
+        break;
     }
 
-    // 2) Category filter
+    // Category
     if (_categoryFilter != 'All') {
       filtered = filtered.where(
         (t) =>
@@ -285,7 +331,7 @@ class _ToolsScreenState extends State<ToolsScreen>
       );
     }
 
-    // 3) Search text
+    // Search
     if (_searchQuery.isNotEmpty) {
       filtered = filtered.where((t) {
         final q = _searchQuery;
@@ -317,7 +363,6 @@ class _FilterChip extends StatelessWidget {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isSelected
@@ -325,25 +370,23 @@ class _FilterChip extends StatelessWidget {
             : cs.surfaceContainerHighest.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(30),
         border: Border.all(
-          width: 1.3,
           color: isSelected
               ? cs.primary.withValues(alpha: 0.9)
               : cs.outlineVariant.withValues(alpha: 0.35),
+          width: 1.3,
         ),
       ),
       child: InkWell(
-        onTap: onTap,
         borderRadius: BorderRadius.circular(30),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              fontSize: 14.5,
-              color: isSelected
-                  ? cs.primary
-                  : cs.onSurface.withValues(alpha: 0.85),
-            ),
+        onTap: onTap,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14.5,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? cs.primary
+                : cs.onSurface.withValues(alpha: 0.85),
           ),
         ),
       ),
