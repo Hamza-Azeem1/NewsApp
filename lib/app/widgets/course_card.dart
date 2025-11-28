@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import '../models/course.dart';
-import '../screens/in_app_browser.dart'; 
+import '../screens/course_details_screen.dart';
 
 class CourseCard extends StatelessWidget {
   final Course course;
 
   const CourseCard({super.key, required this.course});
 
-  void _openCourse(BuildContext context) {
-    if (course.buyUrl.isEmpty) return;
-
+  void _openDetails(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => InAppBrowser(url: course.buyUrl),
+        builder: (_) => CourseDetailsScreen(course: course),
       ),
     );
   }
@@ -22,13 +20,20 @@ class CourseCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    // Split categories like "Marketing, SEO" → ["Marketing", "SEO"]
+    final categoryTags = course.category
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
     return Card(
       elevation: 3,
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => _openCourse(context),
+        onTap: () => _openDetails(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -69,23 +74,48 @@ class CourseCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Category + price chips
+                  // Category chips + price chip
                   Positioned(
                     left: 12,
                     right: 12,
                     bottom: 10,
                     child: Row(
                       children: [
-                        Chip(
-                          label: Text(
-                            course.category,
-                            style: textTheme.labelMedium?.copyWith(
-                              color: cs.onSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        // Multiple category chips
+                        Expanded(
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: categoryTags.isEmpty
+                                ? [
+                                    Chip(
+                                      label: Text(
+                                        'General',
+                                        style: textTheme.labelMedium?.copyWith(
+                                          color: cs.onSecondary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      backgroundColor:
+                                          cs.secondary.withValues(alpha: 0.9),
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  ]
+                                : categoryTags.map((cat) {
+                                    return Chip(
+                                      label: Text(
+                                        cat,
+                                        style: textTheme.labelMedium?.copyWith(
+                                          color: cs.onSecondary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      backgroundColor:
+                                          cs.secondary.withValues(alpha: 0.9),
+                                      visualDensity: VisualDensity.compact,
+                                    );
+                                  }).toList(),
                           ),
-                          backgroundColor: cs.secondary.withValues(alpha: 0.9),
-                          visualDensity: VisualDensity.compact,
                         ),
                         const SizedBox(width: 8),
                         Chip(
@@ -170,10 +200,12 @@ class CourseCard extends StatelessWidget {
                       ),
                       const Spacer(),
                       FilledButton.icon(
-                        onPressed:
-                            course.buyUrl.isEmpty ? null : () => _openCourse(context),
-                        icon: const Icon(Icons.shopping_cart_outlined, size: 18),
-                        label: const Text('Buy now'),
+                        onPressed: () => _openDetails(context),
+                        icon: const Icon(
+                          Icons.info_outline,
+                          size: 18,
+                        ),
+                        label: const Text('View details'),
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,

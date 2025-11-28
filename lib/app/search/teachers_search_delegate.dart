@@ -4,7 +4,7 @@ import '../services/teachers_repository.dart';
 import '../widgets/teacher_card.dart';
 
 class TeachersSearchDelegate extends SearchDelegate<String?> {
-  final _repo = TeachersRepository();
+  final _repo = TeachersRepository.instance;
 
   @override
   String? get searchFieldLabel => 'Search teachers…';

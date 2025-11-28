@@ -1,67 +1,82 @@
 import 'package:flutter/material.dart';
+
 import '../../app/models/teacher.dart';
 import '../services/admin_teachers_repository.dart';
 import '../widgets/teacher_form.dart';
 
 class TeacherEditorScreen extends StatefulWidget {
-  final String? teacherId; // null => create
-  const TeacherEditorScreen({super.key, this.teacherId});
+  final String? teacherId;
+
+  const TeacherEditorScreen({
+    super.key,
+    this.teacherId,
+  });
+
+  bool get isEditing => teacherId != null;
 
   @override
   State<TeacherEditorScreen> createState() => _TeacherEditorScreenState();
 }
 
 class _TeacherEditorScreenState extends State<TeacherEditorScreen> {
-  final repo = AdminTeachersRepository();
+  final _repo = AdminTeachersRepository();
+
   Teacher? _initial;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    if (widget.teacherId == null) {
-      _loading = false;
-    } else {
-      repo.fetchById(widget.teacherId!).then((t) {
-        setState(() {
-          _initial = t;
-          _loading = false;
-        });
-      });
-    }
+    _loadInitial();
   }
 
-  Future<void> _handleSubmit(Teacher data) async {
-    try {
-      if (_initial == null) {
-        final id = await repo.create(data);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Teacher created')));
-          Navigator.pop(context, id);
-        }
-      } else {
-        final toSave = data.copyWith(id: _initial!.id);
-        await repo.update(toSave);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Changes saved')));
-          Navigator.pop(context, _initial!.id);
-        }
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+  Future<void> _loadInitial() async {
+    if (!widget.isEditing) {
+      setState(() {
+        _initial = Teacher.empty();
+        _loading = false;
+      });
+      return;
     }
+
+    final t = await _repo.fetchById(widget.teacherId!);
+    setState(() {
+      _initial = t ?? Teacher.empty().copyWith(id: widget.teacherId);
+      _loading = false;
+    });
+  }
+
+  Future<void> _handleSave(Teacher updated) async {
+    final base = _initial ?? Teacher.empty();
+    final toSave = updated.copyWith(
+      id: base.id.isNotEmpty ? base.id : '',
+      createdAt: base.createdAt,
+    );
+
+    await _repo.upsertTeacher(toSave);
+
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final title = widget.isEditing ? 'Edit teacher' : 'Add teacher';
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.teacherId == null ? 'Add Teacher' : 'Edit Teacher'),
+        title: Text(title),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : TeacherForm(initial: _initial, onSubmit: _handleSubmit),
+          : Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: TeacherForm(
+                initial: _initial,
+                onSaved: _handleSave,
+              ),
+            ),
     );
   }
 }

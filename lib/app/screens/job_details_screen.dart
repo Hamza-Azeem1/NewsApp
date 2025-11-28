@@ -24,6 +24,13 @@ class JobDetailsScreen extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
 
+    // 🔹 Split comma-separated categories into a clean list
+    final categories = job.category
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Job details'),
@@ -50,44 +57,31 @@ class JobDetailsScreen extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
 
-            // Category + location
-            Row(
-              children: [
-                if (job.category.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      job.category,
-                      style: t.labelMedium?.copyWith(
-                        color: cs.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+            // 🔹 Categories + location as separate pills
+            if (categories.isNotEmpty || job.location.isNotEmpty)
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  // Category pills
+                  ...categories.map(
+                    (cat) => _pill(
+                      context,
+                      icon: Icons.work_outline_rounded,
+                      label: cat,
                     ),
                   ),
-                const SizedBox(width: 8),
-                if (job.location.isNotEmpty)
-                  Row(
-                    children: [
-                      Icon(Icons.place_outlined,
-                          size: 16, color: cs.onSurfaceVariant),
-                      const SizedBox(width: 4),
-                      Text(
-                        job.location,
-                        style: t.labelSmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
+                  // Location pill
+                  if (job.location.isNotEmpty)
+                    _pill(
+                      context,
+                      icon: Icons.place_outlined,
+                      label: job.location,
+                    ),
+                ],
+              ),
 
             const SizedBox(height: 16),
 
@@ -118,6 +112,34 @@ class JobDetailsScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Reusable pill-style chip (same vibe as JobCard)
+  Widget _pill(BuildContext context,
+      {required IconData icon, required String label}) {
+    final cs = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: cs.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: t.labelSmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

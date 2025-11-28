@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../app/screens/in_app_browser.dart';
+import '../../app/screens/ebook_details_screen.dart';
 import '../models/ebook.dart';
 
 class EbookCard extends StatelessWidget {
@@ -10,12 +10,11 @@ class EbookCard extends StatelessWidget {
     required this.ebook,
   });
 
-  Future<void> _openBuyLink(BuildContext context) async {
-    if (ebook.buyUrl.trim().isEmpty) return;
+  void _openDetails(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => InAppBrowser(url: ebook.buyUrl),
+        builder: (_) => EbookDetailsScreen(ebook: ebook),
       ),
     );
   }
@@ -29,6 +28,13 @@ class EbookCard extends StatelessWidget {
         ? (ebook.pricePkr != null ? 'PKR ${ebook.pricePkr}' : 'Paid')
         : 'Free';
 
+    // Split categories like "Marketing, SEO" -> ["Marketing", "SEO"]
+    final categoryTags = ebook.category
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
     return Card(
       elevation: 6,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -37,7 +43,7 @@ class EbookCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => _openBuyLink(context),
+        onTap: () => _openDetails(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -69,33 +75,53 @@ class EbookCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Category chip
-                  Positioned(
-                    left: 16,
-                    top: 14,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.category,
-                              size: 16, color: Colors.white70),
-                          const SizedBox(width: 4),
-                          Text(
-                            ebook.category,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+
+                  // Category chips (multiple)
+                  if (categoryTags.isNotEmpty)
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      top: 12,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: categoryTags.map((cat) {
+                            return Container(
+                              margin: const EdgeInsets.only(right: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    Colors.black.withValues(alpha: 0.55),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.category,
+                                    size: 15,
+                                    color: Colors.white70,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    cat,
+                                    style: theme.textTheme.labelSmall
+                                        ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
-                  ),
+
                   // Title
                   Positioned(
                     left: 16,
@@ -141,7 +167,8 @@ class EbookCard extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                      color: theme.colorScheme.onSurface
+                          .withValues(alpha: 0.8),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -184,15 +211,16 @@ class EbookCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: () => _openBuyLink(context),
+                          onPressed: () => _openDetails(context),
                           icon: Icon(
                             ebook.isPaid
-                                ? Icons.shopping_bag_outlined
+                                ? Icons.info_outline
                                 : Icons.menu_book_outlined,
                           ),
-                          label: Text(ebook.isPaid ? 'Buy Now' : 'Open'),
+                          label: const Text('View details'),
                           style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),

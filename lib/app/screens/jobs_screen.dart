@@ -151,17 +151,19 @@ class _JobsScreenState extends State<JobsScreen>
 
           final allJobs = snap.data ?? [];
 
-          // Dynamic categories from jobs (no "all" etc.)
-          final dynamicCats = allJobs
-              .map((j) => j.category.trim())
-              .where((c) {
-                if (c.isEmpty) return false;
-                final lc = c.toLowerCase();
-                return lc != 'all';
-              })
-              .toSet()
-              .toList()
-            ..sort();
+          // Dynamic categories from JOB.category tokens
+          final dynamicCats = <String>{};
+          for (final j in allJobs) {
+            for (final raw in j.category.split(',')) {
+              final cat = raw.trim();
+              if (cat.isEmpty) continue;
+              final lc = cat.toLowerCase();
+              if (lc == 'all') continue;
+              dynamicCats.add(cat);
+            }
+          }
+          final dynamicCatsList = dynamicCats.toList()
+            ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
           // Apply filters & search
           final filtered = _applyFilters(allJobs);
@@ -169,7 +171,6 @@ class _JobsScreenState extends State<JobsScreen>
 
           return Column(
             children: [
-              // 🔌 Offline banner
               if (isOffline) const OfflineBanner(),
 
               // 🔍 Expandable Search Bar
@@ -219,7 +220,6 @@ class _JobsScreenState extends State<JobsScreen>
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Row(
                   children: [
-                    // "All" chip
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: _FilterChip(
@@ -232,8 +232,7 @@ class _JobsScreenState extends State<JobsScreen>
                         },
                       ),
                     ),
-                    // Dynamic category chips
-                    ...dynamicCats.map((cat) {
+                    ...dynamicCatsList.map((cat) {
                       final selected = _selectedCategory == cat;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
@@ -299,8 +298,7 @@ class _JobsScreenState extends State<JobsScreen>
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) =>
-                                      JobDetailsScreen(job: job),
+                                  builder: (_) => JobDetailsScreen(job: job),
                                 ),
                               );
                             },
@@ -315,17 +313,22 @@ class _JobsScreenState extends State<JobsScreen>
     );
   }
 
+  bool _jobHasCategory(Job j, String cat) {
+    final want = cat.trim().toLowerCase();
+    return j.category
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .any((c) => c == want);
+  }
+
   // 🧠 Filtering by category + search
   List<Job> _applyFilters(List<Job> list) {
     Iterable<Job> filtered = list;
 
-    // Category filter
+    // Category filter (multi-token)
     if (_selectedCategory != 'All') {
-      filtered = filtered.where(
-        (j) =>
-            j.category.trim().toLowerCase() ==
-            _selectedCategory.trim().toLowerCase(),
-      );
+      filtered =
+          filtered.where((j) => _jobHasCategory(j, _selectedCategory));
     }
 
     // Search

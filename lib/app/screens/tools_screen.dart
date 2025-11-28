@@ -67,9 +67,11 @@ class _ToolsScreenState extends State<ToolsScreen>
   }
 
   void _onCameOnline() {
+    // ✅ Capture context-dependent objects before any potential async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     final cs = Theme.of(context).colorScheme;
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    scaffoldMessenger.showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
@@ -147,17 +149,20 @@ class _ToolsScreenState extends State<ToolsScreen>
 
           final allTools = snapshot.data ?? [];
 
-          // Dynamic categories excluding reserved ones
-          final dynamicCats = allTools
-              .map((t) => t.category.trim())
-              .where((c) {
-                if (c.isEmpty) return false;
-                final lc = c.toLowerCase();
-                return lc != 'all' && lc != 'free' && lc != 'paid';
-              })
-              .toSet()
-              .toList()
-            ..sort();
+          // Dynamic categories – split comma-separated tokens
+          final dynamicCats = <String>{};
+          for (final tool in allTools) {
+            final catString = tool.category;
+            for (final raw in catString.split(',')) {
+              final cat = raw.trim();
+              if (cat.isEmpty) continue;
+              final lc = cat.toLowerCase();
+              if (lc == 'all' || lc == 'free' || lc == 'paid') continue;
+              dynamicCats.add(cat);
+            }
+          }
+          final dynamicCatList = ['All', ...dynamicCats.toList()
+            ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))];
 
           final filtered = _applyFilters(allTools);
 
@@ -205,7 +210,7 @@ class _ToolsScreenState extends State<ToolsScreen>
 
               const SizedBox(height: 4),
 
-              // Price filter chips
+              // 🔹 Top row: Price filter chips (All | Free | Paid)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -219,12 +224,8 @@ class _ToolsScreenState extends State<ToolsScreen>
                         isSelected: selected,
                         onTap: () {
                           setState(() {
-                            if (cat == 'All') {
-                              _priceFilter = 'All';
-                              _categoryFilter = 'All';
-                            } else {
-                              _priceFilter = cat;
-                            }
+                            // ✅ Clicking All in upper row only resets price filter
+                            _priceFilter = cat;
                           });
                         },
                       ),
@@ -233,13 +234,13 @@ class _ToolsScreenState extends State<ToolsScreen>
                 ),
               ),
 
-              // Category chips
-              if (dynamicCats.isNotEmpty)
+              // 🔹 Bottom row: Category chips (All + dynamic categories)
+              if (dynamicCatList.isNotEmpty)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
                   child: Row(
-                    children: dynamicCats.map((cat) {
+                    children: dynamicCatList.map((cat) {
                       final isSelected = _categoryFilter == cat;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
@@ -248,10 +249,16 @@ class _ToolsScreenState extends State<ToolsScreen>
                           isSelected: isSelected,
                           onTap: () {
                             setState(() {
-                              if (_categoryFilter == cat) {
+                              if (cat == 'All') {
+                                // ✅ Clicking All in bottom row only resets category filter
                                 _categoryFilter = 'All';
                               } else {
-                                _categoryFilter = cat;
+                                // tap same category again -> clear category filter
+                                if (_categoryFilter == cat) {
+                                  _categoryFilter = 'All';
+                                } else {
+                                  _categoryFilter = cat;
+                                }
                               }
                             });
                           },
@@ -306,6 +313,14 @@ class _ToolsScreenState extends State<ToolsScreen>
     );
   }
 
+  bool _toolHasCategory(Tool t, String cat) {
+    final want = cat.trim().toLowerCase();
+    return t.category
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .any((c) => c == want);
+  }
+
   // Apply filters
   List<Tool> _applyFilters(List<Tool> list) {
     Iterable<Tool> filtered = list;
@@ -324,11 +339,7 @@ class _ToolsScreenState extends State<ToolsScreen>
 
     // Category
     if (_categoryFilter != 'All') {
-      filtered = filtered.where(
-        (t) =>
-            t.category.trim().toLowerCase() ==
-            _categoryFilter.trim().toLowerCase(),
-      );
+      filtered = filtered.where((t) => _toolHasCategory(t, _categoryFilter));
     }
 
     // Search

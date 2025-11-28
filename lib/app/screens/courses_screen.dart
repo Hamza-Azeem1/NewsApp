@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../services/courses_repository.dart';
 import '../models/course.dart';
 import '../widgets/course_card.dart';
-import '../search/courses_search_delegate.dart';
 
 // 🔌 Connectivity
 import '../services/connectivity_service.dart';
@@ -17,7 +16,8 @@ class CoursesScreen extends StatefulWidget {
   State<CoursesScreen> createState() => _CoursesScreenState();
 }
 
-class _CoursesScreenState extends State<CoursesScreen> {
+class _CoursesScreenState extends State<CoursesScreen>
+    with SingleTickerProviderStateMixin {
   final _repo = CoursesRepository();
 
   /// Top row: price filter -> 'All' | 'Free' | 'Paid'
@@ -25,6 +25,14 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   /// Bottom row: dynamic category filter (subject) -> 'All' = no category filter
   String _categoryFilter = 'All';
+
+  // 🔍 Search
+  bool _showSearchBar = false;
+  late AnimationController _searchAnimCtrl;
+  late Animation<double> _searchExpandAnim;
+  final TextEditingController _searchCtrl = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+  String _searchQuery = '';
 
   // 🔌 Connectivity
   late StreamSubscription<AppConnectionStatus> _connSub;
@@ -34,6 +42,15 @@ class _CoursesScreenState extends State<CoursesScreen> {
   void initState() {
     super.initState();
 
+    // Search animation
+    _searchAnimCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _searchExpandAnim =
+        CurvedAnimation(parent: _searchAnimCtrl, curve: Curves.easeInOut);
+
+    // Connectivity
     _connStatus = ConnectivityService.instance.currentStatus;
     _connSub = ConnectivityService.instance.statusStream.listen((status) {
       if (!mounted) return;
@@ -49,9 +66,11 @@ class _CoursesScreenState extends State<CoursesScreen> {
   }
 
   void _onCameOnline() {
+    // ✅ Capture context-dependent objects before any potential async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     final cs = Theme.of(context).colorScheme;
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    scaffoldMessenger.showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
@@ -73,12 +92,35 @@ class _CoursesScreenState extends State<CoursesScreen> {
   @override
   void dispose() {
     _connSub.cancel();
+    _searchCtrl.dispose();
+    _searchFocus.dispose();
+    _searchAnimCtrl.dispose();
     super.dispose();
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _showSearchBar = !_showSearchBar;
+    });
+
+    if (_showSearchBar) {
+      _searchAnimCtrl.forward();
+      Future.microtask(() {
+        _searchFocus.requestFocus();
+      });
+    } else {
+      _searchAnimCtrl.reverse();
+      _searchCtrl.clear();
+      _searchQuery = '';
+      _searchFocus.unfocus();
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    //final cs = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
     final isOffline = _connStatus == AppConnectionStatus.offline;
 
     return Scaffold(
@@ -86,13 +128,10 @@ class _CoursesScreenState extends State<CoursesScreen> {
         title: const Text('Courses'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              showSearch(
-                context: context,
-                delegate: CoursesSearchDelegate(repository: _repo),
-              );
-            },
+            icon: Icon(
+              _showSearchBar ? Icons.close_rounded : Icons.search_rounded,
+            ),
+            onPressed: _toggleSearch,
           ),
         ],
       ),
@@ -115,25 +154,73 @@ class _CoursesScreenState extends State<CoursesScreen> {
           // Static categories for top row
           final staticCats = ['All', 'Free', 'Paid'];
 
-          // Build dynamic categories from data (except All/Free/Paid)
-          final dynamicCats = allCourses
-              .map((c) => c.category.trim())
-              .where((c) =>
-                  c.isNotEmpty &&
-                  !staticCats
-                      .map((e) => e.toLowerCase())
-                      .contains(c.toLowerCase()))
-              .toSet()
-              .toList()
-            ..sort();
+          // 🔹 Build dynamic categories from data
+          //    - each course can have "Marketing, SEO"
+          //    - we split by comma and add them individually
+          //    - ignore FREE / PAID here
+          final dynamicCatSet = <String>{};
+          for (final c in allCourses) {
+            final catString = c.category;
+            for (final raw in catString.split(',')) {
+              final cat = raw.trim();
+              if (cat.isEmpty) continue;
 
-          // Apply both filters to the full list
+              final lower = cat.toLowerCase();
+              if (lower == 'free' || lower == 'paid') continue;
+
+              dynamicCatSet.add(cat);
+            }
+          }
+
+          final dynamicCats = ['All', ...dynamicCatSet.toList()
+            ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))];
+
+          // Apply filters + search
           final filteredCourses = _applyFilters(allCourses);
 
           return Column(
             children: [
               // 🔌 Offline banner
               if (isOffline) const OfflineBanner(),
+
+              // 🔍 Expandable Search Bar
+              SizeTransition(
+                sizeFactor: _searchExpandAnim,
+                axisAlignment: -1.0,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    focusNode: _searchFocus,
+                    autofocus: false,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value.trim().toLowerCase();
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search courses, topics, categories...',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      isDense: true,
+                      filled: true,
+                      fillColor:
+                          cs.surfaceContainerHighest.withValues(alpha: 0.4),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 14),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide(color: cs.primary),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: BorderSide(
+                          color: cs.outline.withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 8),
 
@@ -153,13 +240,8 @@ class _CoursesScreenState extends State<CoursesScreen> {
                         isSelected: isSelected,
                         onTap: () {
                           setState(() {
-                            if (cat == 'All') {
-                              // ✅ Reset everything when All is tapped
-                              _priceFilter = 'All';
-                              _categoryFilter = 'All';
-                            } else {
-                              _priceFilter = cat;
-                            }
+                            // ✅ Clicking All in upper row only resets price filter
+                            _priceFilter = cat;
                           });
                         },
                       ),
@@ -168,7 +250,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                 ),
               ),
 
-              // 🔹 Bottom row: dynamic categories
+              // 🔹 Bottom row: All + dynamic categories
               if (dynamicCats.isNotEmpty)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -188,11 +270,16 @@ class _CoursesScreenState extends State<CoursesScreen> {
                           isSelected: isSelected,
                           onTap: () {
                             setState(() {
-                              // tap same category again -> clear category filter
-                              if (_categoryFilter == cat) {
+                              if (cat == 'All') {
+                                // ✅ Clicking All in bottom row only resets category filter
                                 _categoryFilter = 'All';
                               } else {
-                                _categoryFilter = cat;
+                                // tap same category again -> clear category filter
+                                if (_categoryFilter == cat) {
+                                  _categoryFilter = 'All';
+                                } else {
+                                  _categoryFilter = cat;
+                                }
                               }
                             });
                           },
@@ -207,8 +294,15 @@ class _CoursesScreenState extends State<CoursesScreen> {
               // 🔹 Courses list
               Expanded(
                 child: filteredCourses.isEmpty
-                    ? const Center(
-                        child: Text('No courses found for this filter.'),
+                    ? Center(
+                        child: Text(
+                          _searchQuery.isEmpty
+                              ? 'No courses found for this filter.'
+                              : 'No courses match "$_searchQuery".',
+                          style: t.bodyMedium?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.symmetric(
@@ -216,7 +310,8 @@ class _CoursesScreenState extends State<CoursesScreen> {
                           vertical: 12,
                         ),
                         itemCount: filteredCourses.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           return CourseCard(course: filteredCourses[index]);
                         },
@@ -229,7 +324,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
     );
   }
 
-  /// 🧠 Apply BOTH filters: price (top row) + category (bottom row)
+  /// 🧠 Apply price + category + search
   List<Course> _applyFilters(List<Course> list) {
     Iterable<Course> filtered = list;
 
@@ -249,11 +344,30 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
     // 2) Category filter
     if (_categoryFilter != 'All') {
-      filtered = filtered.where(
-        (c) =>
-            c.category.trim().toLowerCase() ==
-            _categoryFilter.trim().toLowerCase(),
-      );
+      final selected = _categoryFilter.trim().toLowerCase();
+      filtered = filtered.where((c) {
+        final tokens = c.category
+            .split(',')
+            .map((s) => s.trim().toLowerCase())
+            .where((s) => s.isNotEmpty);
+        return tokens.contains(selected);
+      }).toList();
+    }
+
+    // 3) Search filter
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery;
+      filtered = filtered.where((c) {
+        bool contains(String? s) =>
+            (s ?? '').toLowerCase().contains(q);
+
+        final catText = c.category.toLowerCase();
+
+        return contains(c.title) ||
+            contains(c.description) ||
+            contains(c.topicsCovered) ||
+            catText.contains(q);
+      }).toList();
     }
 
     return filtered.toList();

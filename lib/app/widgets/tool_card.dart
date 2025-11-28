@@ -22,6 +22,13 @@ class ToolCard extends StatelessWidget {
             ? 'PKR ${tool.price!.toStringAsFixed(0)}'
             : 'Paid');
 
+    // Split comma-separated categories into separate tokens
+    final categories = tool.category
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
     return Card(
       elevation: 2,
       clipBehavior: Clip.antiAlias,
@@ -66,7 +73,37 @@ class ToolCard extends StatelessWidget {
                         color: cs.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
+
+                    // Category chips
+                    if (categories.isNotEmpty) ...[
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: categories.map((cat) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: cs.secondaryContainer
+                                  .withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              cat,
+                              style: textTheme.labelSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSecondaryContainer,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
+
                     Row(
                       children: [
                         Container(
@@ -77,7 +114,7 @@ class ToolCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: tool.isFree
                                 ? cs.primaryContainer
-                                : cs.secondaryContainer,
+                                : cs.tertiaryContainer,
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(

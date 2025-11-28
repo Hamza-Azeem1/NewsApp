@@ -28,7 +28,7 @@ class _AdminShellState extends State<AdminShell> {
     super.initState();
     _pages = [
       const NewsListScreen(),
-      TeachersListScreen(),
+      const TeachersListScreen(),
       const AdminCoursesScreen(),
       const AdminEbooksScreen(),
       const AdminToolsScreen(),

@@ -16,6 +16,13 @@ class JobCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
 
+    // Split comma-separated categories
+    final categories = job.category
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -30,7 +37,7 @@ class JobCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // title + company
+              // title
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -55,7 +62,6 @@ class JobCard extends StatelessWidget {
 
               const SizedBox(height: 8),
 
-              // short desc
               if (job.shortDesc.isNotEmpty)
                 Text(
                   job.shortDesc,
@@ -68,23 +74,35 @@ class JobCard extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              // category + location
+              // categories + location + "View" arrow
               Row(
                 children: [
-                  _chip(
-                    context,
-                    icon: Icons.work_outline_rounded,
-                    label: job.category,
+                  Expanded(
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        // category pills
+                        ...categories.map(
+                          (cat) => _pill(
+                            context,
+                            icon: Icons.work_outline_rounded,
+                            label: cat,
+                          ),
+                        ),
+                        // location pill
+                        if (job.location.isNotEmpty)
+                          _pill(
+                            context,
+                            icon: Icons.place_outlined,
+                            label: job.location,
+                          ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 8),
-                  if (job.location.isNotEmpty)
-                    _chip(
-                      context,
-                      icon: Icons.place_outlined,
-                      label: job.location,
-                    ),
-                  const Spacer(),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'View',
@@ -110,7 +128,7 @@ class JobCard extends StatelessWidget {
     );
   }
 
-  Widget _chip(BuildContext context,
+  Widget _pill(BuildContext context,
       {required IconData icon, required String label}) {
     final cs = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;

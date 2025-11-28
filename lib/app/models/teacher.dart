@@ -5,51 +5,49 @@ class Teacher {
   final String name;
   final String? imageUrl;
   final String? intro;
-  final List<String> specializations; // chips
-  final List<String> qualifications;  // chips
-  final Map<String, String> socials;  // label -> url
-  final Timestamp createdAt;
-  final Timestamp updatedAt;
 
-  Teacher({
+  /// e.g. ["Math", "Physics"] – legacy field you already use
+  final List<String> specializations;
+
+  /// e.g. ["M.Phil in Economics", "10+ years teaching"]
+  final List<String> qualifications;
+
+  /// platform label → url (e.g. "LinkedIn" → "https://...")
+  final Map<String, String> socials;
+
+  /// NEW: dynamic categories for filters, e.g. ["Economy", "History"]
+  final List<String> categories;
+
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  const Teacher({
     required this.id,
     required this.name,
-    this.imageUrl,
-    this.intro,
-    this.specializations = const [],
-    this.qualifications = const [],
-    this.socials = const {},
-    Timestamp? createdAt,
-    Timestamp? updatedAt,
-  })  : createdAt = createdAt ?? Timestamp.now(),
-        updatedAt = updatedAt ?? Timestamp.now();
+    required this.imageUrl,
+    required this.intro,
+    required this.specializations,
+    required this.qualifications,
+    required this.socials,
+    required this.categories,
+    required this.createdAt,
+    required this.updatedAt,
+  });
 
-  factory Teacher.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final d = doc.data() ?? {};
+  factory Teacher.empty() {
+    final now = DateTime.now();
     return Teacher(
-      id: doc.id,
-      name: (d['name'] ?? '') as String,
-      imageUrl: d['imageUrl'] as String?,
-      intro: d['intro'] as String?,
-      specializations: List<String>.from(d['specializations'] ?? const []),
-      qualifications: List<String>.from(d['qualifications'] ?? const []),
-      socials: (d['socials'] as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString())) ?? {},
-      createdAt: d['createdAt'] is Timestamp ? d['createdAt'] : Timestamp.now(),
-      updatedAt: d['updatedAt'] is Timestamp ? d['updatedAt'] : Timestamp.now(),
+      id: '',
+      name: '',
+      imageUrl: null,
+      intro: null,
+      specializations: const [],
+      qualifications: const [],
+      socials: const {},
+      categories: const [],
+      createdAt: now,
+      updatedAt: now,
     );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name.trim(),
-      'imageUrl': imageUrl,
-      'intro': intro,
-      'specializations': specializations,
-      'qualifications': qualifications,
-      'socials': socials,
-      'createdAt': createdAt,
-      'updatedAt': Timestamp.now(),
-    };
   }
 
   Teacher copyWith({
@@ -60,6 +58,9 @@ class Teacher {
     List<String>? specializations,
     List<String>? qualifications,
     Map<String, String>? socials,
+    List<String>? categories,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Teacher(
       id: id ?? this.id,
@@ -69,8 +70,71 @@ class Teacher {
       specializations: specializations ?? this.specializations,
       qualifications: qualifications ?? this.qualifications,
       socials: socials ?? this.socials,
-      createdAt: createdAt,
-      updatedAt: Timestamp.now(),
+      categories: categories ?? this.categories,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  factory Teacher.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data() ?? <String, dynamic>{};
+
+    List<String> stringList(dynamic raw) {
+      if (raw is List) {
+        return raw.whereType<String>().map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      }
+      return <String>[];
+    }
+
+    Map<String, String> stringMap(dynamic raw) {
+      if (raw is Map) {
+        return raw.map((key, value) {
+          final k = key?.toString().trim() ?? '';
+          final v = value?.toString().trim() ?? '';
+          return MapEntry(k, v);
+        })
+          ..removeWhere((k, v) => k.isEmpty || v.isEmpty);
+      }
+      return <String, String>{};
+    }
+
+    final createdAtRaw = data['createdAt'];
+    final updatedAtRaw = data['updatedAt'];
+
+    DateTime date(dynamic v, DateTime fallback) {
+      if (v is Timestamp) return v.toDate();
+      if (v is DateTime) return v;
+      return fallback;
+    }
+
+    final now = DateTime.now();
+
+    return Teacher(
+      id: doc.id,
+      name: (data['name'] ?? '') as String,
+      imageUrl: (data['imageUrl'] as String?)?.trim(),
+      intro: (data['intro'] as String?)?.trim(),
+      specializations: stringList(data['specializations']),
+      qualifications: stringList(data['qualifications']),
+      socials: stringMap(data['socials']),
+      // NEW: categories list – backwards compatible if missing
+      categories: stringList(data['categories']),
+      createdAt: date(createdAtRaw, now),
+      updatedAt: date(updatedAtRaw, now),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'imageUrl': imageUrl,
+      'intro': intro,
+      'specializations': specializations,
+      'qualifications': qualifications,
+      'socials': socials,
+      'categories': categories,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
+    };
   }
 }
