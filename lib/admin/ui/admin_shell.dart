@@ -7,6 +7,8 @@ import '../screens/teachers_list_screen.dart';
 import '../screens/admin_ebooks_screen.dart';
 import '../screens/admin_tools_screen.dart';
 import '../screens/admin_jobs_screen.dart';
+import '../screens/admin_videos_screen.dart';
+
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -21,13 +23,14 @@ class _AdminShellState extends State<AdminShell> {
   /// Whether the sidebar is expanded or collapsed
   bool _isExpanded = true;
 
-  late final List<Widget> _pages;
+    late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _pages = [
       const NewsListScreen(),
+      const AdminVideosScreen(),
       const TeachersListScreen(),
       const AdminCoursesScreen(),
       const AdminEbooksScreen(),
@@ -35,6 +38,7 @@ class _AdminShellState extends State<AdminShell> {
       const AdminJobsScreen(),
     ];
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +108,7 @@ class _AdminShellState extends State<AdminShell> {
                 Expanded(
                   child: ListView(
                     children: [
-                      _navItem(
+                                           _navItem(
                         icon: Icons.article_rounded,
                         selected: _index == 0,
                         label: 'News',
@@ -112,40 +116,48 @@ class _AdminShellState extends State<AdminShell> {
                         onTap: () => setState(() => _index = 0),
                       ),
                       _navItem(
-                        icon: Icons.people_alt_rounded,
+                        icon: Icons.ondemand_video_rounded,
                         selected: _index == 1,
-                        label: 'Teachers',
+                        label: 'Videos',
                         expanded: _isExpanded,
                         onTap: () => setState(() => _index = 1),
                       ),
                       _navItem(
-                        icon: Icons.school_rounded,
+                        icon: Icons.people_alt_rounded,
                         selected: _index == 2,
-                        label: 'Courses',
+                        label: 'Teachers',
                         expanded: _isExpanded,
                         onTap: () => setState(() => _index = 2),
                       ),
                       _navItem(
-                        icon: Icons.menu_book_rounded,
+                        icon: Icons.school_rounded,
                         selected: _index == 3,
-                        label: 'eBooks',
+                        label: 'Courses',
                         expanded: _isExpanded,
                         onTap: () => setState(() => _index = 3),
                       ),
                       _navItem(
-                        icon: Icons.apps_rounded,
+                        icon: Icons.menu_book_rounded,
                         selected: _index == 4,
-                        label: 'Tools',
+                        label: 'eBooks',
                         expanded: _isExpanded,
                         onTap: () => setState(() => _index = 4),
                       ),
                       _navItem(
-                        icon: Icons.work_rounded,
+                        icon: Icons.handyman_rounded,
                         selected: _index == 5,
-                        label: 'Jobs',
+                        label: 'Tools',
                         expanded: _isExpanded,
                         onTap: () => setState(() => _index = 5),
                       ),
+                      _navItem(
+                        icon: Icons.work_outline_rounded,
+                        selected: _index == 6,
+                        label: 'Jobs',
+                        expanded: _isExpanded,
+                        onTap: () => setState(() => _index = 6),
+                      ),
+
                     ],
                   ),
                 ),

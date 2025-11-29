@@ -3,35 +3,60 @@ import '../core/constants.dart';
 import '../models/news_article.dart';
 import '../models/app_category.dart';
 import 'firestore_service.dart';
+import '../models/news_video.dart';
 
 class NewsRepository {
   final _fs = FirestoreService.instance;
 
-  // Categories: use collection if exists, else derive from news
-  Stream<List<AppCategory>> streamCategories() async* {
-    final catRef = _fs.col(categoriesCollection).orderBy('name');
-    await for (final snap in catRef.snapshots()) {
-      final items =
-          snap.docs.map((d) => AppCategory.fromMap(d.id, d.data())).toList();
-      if (items.isNotEmpty) {
-        yield items;
-      } else {
-        // fallback: derive from news
-        final newsSnap = await _fs.col(newsCollection).get();
-        final names = newsSnap.docs
-            .map((d) => (d.data()['category'] ?? '').toString())
-            .where((c) => c.isNotEmpty)
-            .toSet()
-            .toList()
-          ..sort();
-        yield names
-            .map((n) => AppCategory(id: n.toLowerCase(), name: n))
-            .toList();
-      }
-    }
+  /// 🔥 Categories = union of news & video categories
+  Stream<List<AppCategory>> streamCategories() {
+    return Stream.fromFuture(_loadAllCategories());
   }
 
-  // NEWS: fetch, then sort locally by date desc.
+  Future<List<AppCategory>> _loadAllCategories() async {
+    // use the same FirestoreService wrapper
+    final newsSnap = await _fs.col(newsCollection).get();
+    final videoSnap = await _fs.col('videos').get();
+
+    final set = <String>{};
+
+    // From news.category
+    for (final doc in newsSnap.docs) {
+      final cat = (doc.data()['category'] ?? '').toString().trim();
+      if (cat.isNotEmpty && cat.toLowerCase() != 'all') {
+        set.add(cat);
+      }
+    }
+
+    // From videos.categories or videos.category
+    for (final doc in videoSnap.docs) {
+      final data = doc.data();
+      final cats = data['categories'];
+
+      if (cats is Iterable) {
+        for (final c in cats) {
+          final s = c.toString().trim();
+          if (s.isNotEmpty && s.toLowerCase() != 'all') {
+            set.add(s);
+          }
+        }
+      } else if (data['category'] != null) {
+        final s = data['category'].toString().trim();
+        if (s.isNotEmpty && s.toLowerCase() != 'all') {
+          set.add(s);
+        }
+      }
+    }
+
+    final names = set.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+    return names
+        .map((n) => AppCategory(id: n.toLowerCase(), name: n))
+        .toList();
+  }
+
+  /// NEWS: fetch, then sort locally by date desc.
   Stream<List<NewsArticle>> streamNews({String? category}) {
     Query<Map<String, dynamic>> q = _fs.col(newsCollection);
     if (category != null && category.isNotEmpty) {
@@ -40,6 +65,21 @@ class NewsRepository {
     return q.snapshots().map((s) {
       final list = s.docs.map(NewsArticle.fromDoc).toList()
         ..sort((a, b) => b.date.compareTo(a.date));
+      return list;
+    });
+  }
+
+  /// VIDEOS: fetch, optional category filter, sort by createdAt desc.
+  Stream<List<NewsVideo>> streamVideos({String? category}) {
+    Query<Map<String, dynamic>> q = _fs.col('videos');
+
+    if (category != null && category.isNotEmpty) {
+      q = q.where('categories', arrayContains: category);
+    }
+
+    return q.snapshots().map((s) {
+      final list = s.docs.map(NewsVideo.fromDoc).toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return list;
     });
   }
