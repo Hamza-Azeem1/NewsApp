@@ -102,7 +102,7 @@ class EbookCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurface.withOpacity(0.8),
+                        color: cs.onSurface.withValues(alpha: .8),
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -124,7 +124,7 @@ class EbookCard extends StatelessWidget {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.55),
+                                color: Colors.black.withValues(alpha: .55),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Text(
@@ -150,8 +150,8 @@ class EbookCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: ebook.isPaid
-                                ? cs.errorContainer.withOpacity(0.4)
-                                : cs.primaryContainer.withOpacity(0.5),
+                                ? cs.errorContainer.withValues(alpha: .4)
+                                : cs.primaryContainer.withValues(alpha: .5),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(

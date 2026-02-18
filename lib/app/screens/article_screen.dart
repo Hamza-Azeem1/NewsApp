@@ -84,7 +84,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: cs.primary.withOpacity(0.12),
+                          color: cs.primary.withValues(alpha: .12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -128,7 +128,7 @@ class _ArticleScreenState extends State<ArticleScreen> {
                       a.subtitle,
                       style: t.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: cs.onSurface.withOpacity(0.8),
+                        color: cs.onSurface.withValues(alpha: .8),
                       ),
                     ),
 

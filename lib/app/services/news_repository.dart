@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import '../core/constants.dart';
 import '../models/news_article.dart';
 import '../models/app_category.dart';
@@ -174,8 +173,12 @@ class NewsRepository {
         .get();
 
     final batch = FirebaseFirestore.instance.batch();
-    for (final doc in oldNews.docs) batch.delete(doc.reference);
-    for (final doc in oldVideos.docs) batch.delete(doc.reference);
+    for (final doc in oldNews.docs) {
+      batch.delete(doc.reference);
+    }
+    for (final doc in oldVideos.docs) {
+      batch.delete(doc.reference);
+    }
     await batch.commit();
   }
 
