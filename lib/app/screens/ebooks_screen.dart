@@ -52,12 +52,10 @@ class _EbooksScreenState extends State<EbooksScreen>
 
     // 🔌 Subscribe to connectivity
     _connStatus = ConnectivityService.instance.currentStatus;
-    _connSub =
-        ConnectivityService.instance.statusStream.listen((status) {
+    _connSub = ConnectivityService.instance.statusStream.listen((status) {
       if (!mounted) return;
 
-      final wasOffline =
-          _connStatus == AppConnectionStatus.offline;
+      final wasOffline = _connStatus == AppConnectionStatus.offline;
 
       setState(() => _connStatus = status);
 
@@ -235,8 +233,7 @@ class _EbooksScreenState extends State<EbooksScreen>
                             )
                           : null,
                       filled: true,
-                      fillColor:
-                          theme.colorScheme.surfaceContainerHighest,
+                      fillColor: theme.colorScheme.surfaceContainerHighest,
                       isDense: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -283,8 +280,8 @@ class _EbooksScreenState extends State<EbooksScreen>
               if (categories.isNotEmpty)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
@@ -296,7 +293,7 @@ class _EbooksScreenState extends State<EbooksScreen>
                           isSelected: _selectedCategoryName == null,
                           onTap: () {
                             setState(() {
-                              // ✅ Only clear category filter (lower row)
+                              // ✅ Single tap → clear category filter
                               _selectedCategoryName = null;
                             });
                           },
@@ -312,12 +309,8 @@ class _EbooksScreenState extends State<EbooksScreen>
                             isSelected: selected,
                             onTap: () {
                               setState(() {
-                                // Tap same category again → clear category filter
-                                if (_selectedCategoryName == cat) {
-                                  _selectedCategoryName = null;
-                                } else {
-                                  _selectedCategoryName = cat;
-                                }
+                                // ✅ Single tap selects this category
+                                _selectedCategoryName = cat;
                               });
                             },
                           ),
@@ -338,8 +331,7 @@ class _EbooksScreenState extends State<EbooksScreen>
                               ? 'No ebooks found for this filter.'
                               : 'No ebooks match "$_searchQuery".',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color:
-                                cs.onSurface.withValues(alpha: 0.7),
+                            color: cs.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                       )

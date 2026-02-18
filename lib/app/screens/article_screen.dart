@@ -19,14 +19,10 @@ class _ArticleScreenState extends State<ArticleScreen> {
   @override
   void initState() {
     super.initState();
-    _scroll.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final max = _scroll.position.maxScrollExtent;
-    final offset = _scroll.offset;
-    setState(() {
-      _progress = max > 0 ? (offset / max).clamp(0, 1) : 0;
+    _scroll.addListener(() {
+      final max = _scroll.position.maxScrollExtent;
+      _progress = max == 0 ? 0 : (_scroll.offset / max).clamp(0, 1);
+      setState(() {});
     });
   }
 
@@ -39,12 +35,9 @@ class _ArticleScreenState extends State<ArticleScreen> {
   void _openFull() {
     final url = widget.article.newsUrl;
     if (url == null || url.isEmpty) return;
-
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => InAppBrowser(url: url),
-      ),
+      MaterialPageRoute(builder: (_) => InAppBrowser(url: url)),
     );
   }
 
@@ -61,25 +54,21 @@ class _ArticleScreenState extends State<ArticleScreen> {
         title: const Text("News"),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(3),
-          child: LinearProgressIndicator(
-            value: _progress,
-            backgroundColor: cs.surfaceContainerHighest,
-          ),
+          child:
+              LinearProgressIndicator(value: _progress, backgroundColor: cs.surfaceContainerHighest),
         ),
       ),
       body: SingleChildScrollView(
         controller: _scroll,
         padding: const EdgeInsets.only(bottom: 24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // IMAGE
             if (a.imageUrl.isNotEmpty)
               AspectRatio(
                 aspectRatio: 16 / 9,
-                child: Image.network(
-                  a.imageUrl,
-                  fit: BoxFit.cover,
-                ),
+                child: Image.network(a.imageUrl, fit: BoxFit.cover),
               ),
 
             Padding(
@@ -87,25 +76,33 @@ class _ArticleScreenState extends State<ArticleScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // CATEGORY + DATE
-                  Row(
-                    children: [
-                      Container(
+                  // CATEGORY CHIPS
+                  Wrap(
+                    spacing: 8,
+                    children: a.categories.map((cat) {
+                      return Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: cs.primary.withValues(alpha: 0.12),
+                          color: cs.primary.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          a.category,
+                          cat,
                           style: t.labelMedium?.copyWith(
                             color: cs.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
+                      );
+                    }).toList(),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // DATE
+                  Row(
+                    children: [
                       Icon(Icons.schedule_rounded,
                           size: 16, color: cs.onSurfaceVariant),
                       const SizedBox(width: 4),
@@ -120,20 +117,18 @@ class _ArticleScreenState extends State<ArticleScreen> {
                   // TITLE
                   Text(
                     a.title,
-                    style: t.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style:
+                        t.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
                   ),
 
                   const SizedBox(height: 8),
 
-                  // SUBTITLE
                   if (a.subtitle.isNotEmpty)
                     Text(
                       a.subtitle,
                       style: t.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: cs.onSurface.withValues(alpha: 0.8),
+                        color: cs.onSurface.withOpacity(0.8),
                       ),
                     ),
 
@@ -141,7 +136,6 @@ class _ArticleScreenState extends State<ArticleScreen> {
                   const Divider(),
                   const SizedBox(height: 16),
 
-                  // BODY
                   Text(
                     a.description,
                     style: t.bodyLarge?.copyWith(height: 1.55),
@@ -149,13 +143,12 @@ class _ArticleScreenState extends State<ArticleScreen> {
 
                   const SizedBox(height: 28),
 
-                  // LINK BUTTON (only)
                   if (a.newsUrl != null && a.newsUrl!.isNotEmpty)
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
                         onPressed: _openFull,
-                        icon: const Icon(Icons.open_in_new_rounded),
+                        icon: const Icon(Icons.open_in_new),
                         label: const Text("Read full article"),
                       ),
                     ),

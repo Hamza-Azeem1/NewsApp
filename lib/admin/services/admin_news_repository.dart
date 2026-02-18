@@ -8,7 +8,7 @@ class AdminNewsRepository {
   final _db = FirebaseFirestore.instance;
 
   Future<String> createNews({
-    required String category,
+    required List<String> categories,
     required String title,
     required String subtitle,
     required String description,
@@ -17,7 +17,9 @@ class AdminNewsRepository {
     String? newsUrl,
   }) async {
     final doc = await _db.collection(newsCollection).add({
-      'category': category,
+      'categories': categories,
+      'primaryCategory':
+          categories.isNotEmpty ? categories.first : 'General',
       'title': title,
       'subtitle': subtitle,
       'description': description,
@@ -37,7 +39,7 @@ class AdminNewsRepository {
   }
 }
 
-/// Separate repository for video items used by the admin UI.
+/// Videos repository remains the same
 class AdminVideosRepository {
   final _db = FirebaseFirestore.instance;
 
@@ -69,4 +71,3 @@ class AdminVideosRepository {
     await _db.collection(videosCollection).doc(id).delete();
   }
 }
-

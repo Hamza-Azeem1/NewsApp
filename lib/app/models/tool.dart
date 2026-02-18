@@ -6,10 +6,16 @@ class Tool {
   final String shortDesc;
   final String description;
   final bool isFree;
+
+  /// Price in USD (null for free or unknown)
   final double? price;
+
   final String toolLink;
   final String imageUrl;
-  final String category; // 👈 NEW
+
+  /// Comma-separated categories string (e.g. "SEO, Analytics")
+  final String category;
+
   final DateTime createdAt;
 
   Tool({
@@ -79,7 +85,7 @@ class Tool {
       price: (data['price'] is num) ? (data['price'] as num).toDouble() : null,
       toolLink: data['toolLink'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
-      category: data['category'] ?? 'General', // 👈 NEW, default if old docs
+      category: data['category'] ?? 'General',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
@@ -91,10 +97,10 @@ class Tool {
       'shortDesc': shortDesc,
       'description': description,
       'isFree': isFree,
-      'price': price,
+      'price': price, // USD
       'toolLink': toolLink,
       'imageUrl': imageUrl,
-      'category': category, // 👈 NEW
+      'category': category,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }

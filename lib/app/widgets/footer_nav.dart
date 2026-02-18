@@ -26,7 +26,7 @@ class FooterNav extends StatelessWidget {
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
           selectedIcon: Icon(Icons.home_rounded),
-          label: 'Home',
+          label: 'News',
         ),
         NavigationDestination(
           icon: Icon(Icons.groups_outlined),

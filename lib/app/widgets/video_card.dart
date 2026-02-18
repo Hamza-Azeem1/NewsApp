@@ -25,12 +25,21 @@ class _VideoCardState extends State<VideoCard> {
   bool _isRawVideo = false;
   bool _videoInitialized = false;
 
+  String? _youtubeId; // ✅ cached once for controller + thumbnail
+
   @override
   void initState() {
     super.initState();
     final url = widget.video.videoUrl;
+
     _isYoutube = _isYoutubeUrl(url);
     _isRawVideo = _isRawVideoUrl(url);
+
+    if (_isYoutube) {
+      // ✅ Try package helper first, fallback to manual regex
+      _youtubeId =
+          YoutubePlayerController.convertUrlToId(url) ?? _extractYoutubeId(url);
+    }
   }
 
   @override
@@ -54,6 +63,7 @@ class _VideoCardState extends State<VideoCard> {
         u.endsWith('.m3u8');
   }
 
+  /// Fallback extraction (kept just in case)
   String? _extractYoutubeId(String url) {
     final lower = url.toLowerCase();
     if (!lower.contains('youtube.com') && !lower.contains('youtu.be')) {
@@ -64,6 +74,22 @@ class _VideoCardState extends State<VideoCard> {
     final longMatch = RegExp(r'v=([^?&/]+)').firstMatch(url);
     if (longMatch != null) return longMatch.group(1);
     return null;
+  }
+
+  /// ✅ Decide which thumbnail to show:
+  /// 1. If you provided `thumbnailUrl`, use it.
+  /// 2. Else if YouTube & we have an ID → use YouTube thumbnail.
+  String? _getThumbnailUrl() {
+    final manualThumb = widget.video.thumbnailUrl;
+    if (manualThumb.trim().isNotEmpty) {
+      return manualThumb;
+    }
+
+    if (_isYoutube && _youtubeId != null && _youtubeId!.isNotEmpty) {
+      return 'https://img.youtube.com/vi/$_youtubeId/hqdefault.jpg';
+    }
+
+    return null; // will fallback to a solid color box
   }
 
   String _formatDuration(Duration d) {
@@ -81,20 +107,27 @@ class _VideoCardState extends State<VideoCard> {
     if (_isInlinePlaying) return;
 
     final url = widget.video.videoUrl;
+
     if (_isYoutube) {
-      final id = _extractYoutubeId(url);
-      if (id == null) {
+      final id = _youtubeId;
+      if (id == null || id.isEmpty) {
         _showSnack('Invalid YouTube URL');
         return;
       }
+
       _ytController = YoutubePlayerController.fromVideoId(
         videoId: id,
         autoPlay: true,
         params: const YoutubePlayerParams(
           showFullscreenButton: true,
           showControls: true,
+          playsInline: true, // important on mobile
+          strictRelatedVideos: true,
+          enableCaption: true,
+          origin: 'https://www.youtube-nocookie.com', // 🔑 helps with mobile
         ),
       );
+
       setState(() {
         _isInlinePlaying = true;
       });
@@ -236,15 +269,17 @@ class _VideoCardState extends State<VideoCard> {
                           cat,
                           style: const TextStyle(fontSize: 11),
                         ),
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 0),
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
                       );
                     }).toList(),
                   ),
 
-                if (widget.video.categories.isNotEmpty) const SizedBox(height: 6),
+                if (widget.video.categories.isNotEmpty)
+                  const SizedBox(height: 6),
 
                 // Title
                 Text(
@@ -383,19 +418,23 @@ class _VideoCardState extends State<VideoCard> {
     }
 
     // Default: thumbnail with play overlay
+    final thumbUrl = _getThumbnailUrl();
+
     return GestureDetector(
       onTap: _startInlinePlay,
       child: Stack(
         children: [
           Positioned.fill(
-            child: CachedNetworkImage(
-              imageUrl: widget.video.thumbnailUrl,
-              fit: BoxFit.cover,
-              placeholder: (context, url) =>
-                  const Center(child: CircularProgressIndicator()),
-              errorWidget: (context, url, error) =>
-                  const ColoredBox(color: Colors.black26),
-            ),
+            child: thumbUrl == null || thumbUrl.isEmpty
+                ? const ColoredBox(color: Colors.black26)
+                : CachedNetworkImage(
+                    imageUrl: thumbUrl,
+                    fit: BoxFit.cover, // ✅ fills 16:9 nicely
+                    placeholder: (context, url) =>
+                        const Center(child: CircularProgressIndicator()),
+                    errorWidget: (context, url, error) =>
+                        const ColoredBox(color: Colors.black26),
+                  ),
           ),
           const Positioned.fill(
             child: DecoratedBox(

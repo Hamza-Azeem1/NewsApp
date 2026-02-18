@@ -172,8 +172,11 @@ class _CoursesScreenState extends State<CoursesScreen>
             }
           }
 
-          final dynamicCats = ['All', ...dynamicCatSet.toList()
-            ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))];
+          final dynamicCats = [
+            'All',
+            ...dynamicCatSet.toList()
+              ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))
+          ];
 
           // Apply filters + search
           final filteredCourses = _applyFilters(allCourses);
@@ -254,11 +257,8 @@ class _CoursesScreenState extends State<CoursesScreen>
               if (dynamicCats.isNotEmpty)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(
-                    left: 12,
-                    right: 12,
-                    bottom: 4,
-                  ),
+                  padding:
+                      const EdgeInsets.only(left: 12, right: 12, bottom: 4),
                   physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: dynamicCats.map((cat) {
@@ -270,17 +270,8 @@ class _CoursesScreenState extends State<CoursesScreen>
                           isSelected: isSelected,
                           onTap: () {
                             setState(() {
-                              if (cat == 'All') {
-                                // ✅ Clicking All in bottom row only resets category filter
-                                _categoryFilter = 'All';
-                              } else {
-                                // tap same category again -> clear category filter
-                                if (_categoryFilter == cat) {
-                                  _categoryFilter = 'All';
-                                } else {
-                                  _categoryFilter = cat;
-                                }
-                              }
+                              // ✅ Single-tap selection logic
+                              _categoryFilter = cat;
                             });
                           },
                         ),
@@ -310,8 +301,7 @@ class _CoursesScreenState extends State<CoursesScreen>
                           vertical: 12,
                         ),
                         itemCount: filteredCourses.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 10),
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           return CourseCard(course: filteredCourses[index]);
                         },
@@ -358,8 +348,7 @@ class _CoursesScreenState extends State<CoursesScreen>
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery;
       filtered = filtered.where((c) {
-        bool contains(String? s) =>
-            (s ?? '').toLowerCase().contains(q);
+        bool contains(String? s) => (s ?? '').toLowerCase().contains(q);
 
         final catText = c.category.toLowerCase();
 

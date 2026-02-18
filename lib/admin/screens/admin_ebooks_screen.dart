@@ -1,5 +1,3 @@
-// lib/admin/screens/admin_ebooks_screen.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../app/models/ebook.dart';
@@ -183,6 +181,12 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
             itemBuilder: (context, index) {
               final e = ebooks[index];
 
+              final priceStr = e.isPaid
+                  ? (e.priceUsd != null
+                      ? '\$${e.priceUsd!.toStringAsFixed(2)}'
+                      : 'Paid')
+                  : 'Free';
+
               return ListTile(
                 tileColor: cs.surfaceContainerHighest,
                 shape: RoundedRectangleBorder(
@@ -197,7 +201,7 @@ class _AdminEbooksScreenState extends State<AdminEbooksScreen> {
                 ),
                 title: Text(e.title),
                 subtitle: Text(
-                  '${e.author} • ${e.category} • ${e.isPaid ? "PKR ${e.pricePkr}" : "Free"}',
+                  '${e.author} • ${e.category} • $priceStr',
                 ),
                 trailing: Wrap(
                   spacing: 8,

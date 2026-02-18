@@ -19,7 +19,7 @@ class ToolCard extends StatelessWidget {
     final priceLabel = tool.isFree
         ? 'Free'
         : (tool.price != null
-            ? 'PKR ${tool.price!.toStringAsFixed(0)}'
+            ? '\$${tool.price!.toStringAsFixed(2)}'
             : 'Paid');
 
     // Split comma-separated categories into separate tokens

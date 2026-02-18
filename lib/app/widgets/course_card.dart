@@ -27,6 +27,21 @@ class CourseCard extends StatelessWidget {
         .where((s) => s.isNotEmpty)
         .toList();
 
+    // Build instructor display string
+    final instructors = course.instructors;
+    String? instructorLine;
+    if (instructors.isNotEmpty) {
+      if (instructors.length == 1) {
+        instructorLine = 'by ${instructors.first}';
+      } else if (instructors.length == 2) {
+        instructorLine = 'by ${instructors[0]}, ${instructors[1]}';
+      } else {
+        final remaining = instructors.length - 2;
+        instructorLine =
+            'by ${instructors[0]}, ${instructors[1]} +$remaining more';
+      }
+    }
+
     return Card(
       elevation: 3,
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -121,7 +136,7 @@ class CourseCard extends StatelessWidget {
                         Chip(
                           label: Text(
                             course.isPaid
-                                ? 'PKR ${course.pricePkr ?? '-'}'
+                                ? '\$ ${course.priceUsd!.toStringAsFixed(2)}'
                                 : 'Free',
                             style: textTheme.labelMedium?.copyWith(
                               color: cs.onPrimary,
@@ -155,7 +170,32 @@ class CourseCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
+
+                  // Instructors line
+                  if (instructorLine != null) ...[
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person_outline,
+                          size: 16,
+                          color: cs.onSurface.withValues(alpha: 0.8),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            instructorLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.labelMedium?.copyWith(
+                              color: cs.onSurface.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                  ],
 
                   // Topics covered (short)
                   if (course.topicsCovered.isNotEmpty) ...[

@@ -6,12 +6,17 @@ class Course {
   final String description;
   final String topicsCovered;
   final bool isPaid;
-  final int? pricePkr;
-  final String category; // e.g. "Free", "Paid", "Economy", "Tech"
+
+  /// 🔥 Price now stored in USD instead of PKR
+  final double? priceUsd;
+
+  final String category;
   final String buyUrl;
   final String imageUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  final List<String> instructors;
 
   const Course({
     required this.id,
@@ -19,12 +24,13 @@ class Course {
     required this.description,
     required this.topicsCovered,
     required this.isPaid,
-    required this.pricePkr,
+    required this.priceUsd,
     required this.category,
     required this.buyUrl,
     required this.imageUrl,
     required this.createdAt,
     required this.updatedAt,
+    required this.instructors,
   });
 
   factory Course.empty() {
@@ -35,12 +41,13 @@ class Course {
       description: '',
       topicsCovered: '',
       isPaid: false,
-      pricePkr: null,
+      priceUsd: null,
       category: 'General',
       buyUrl: '',
       imageUrl: '',
       createdAt: now,
       updatedAt: now,
+      instructors: const [],
     );
   }
 
@@ -50,12 +57,13 @@ class Course {
     String? description,
     String? topicsCovered,
     bool? isPaid,
-    int? pricePkr,
+    double? priceUsd,
     String? category,
     String? buyUrl,
     String? imageUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<String>? instructors,
   }) {
     return Course(
       id: id ?? this.id,
@@ -63,12 +71,13 @@ class Course {
       description: description ?? this.description,
       topicsCovered: topicsCovered ?? this.topicsCovered,
       isPaid: isPaid ?? this.isPaid,
-      pricePkr: pricePkr ?? this.pricePkr,
+      priceUsd: priceUsd ?? this.priceUsd,
       category: category ?? this.category,
       buyUrl: buyUrl ?? this.buyUrl,
       imageUrl: imageUrl ?? this.imageUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      instructors: instructors ?? this.instructors,
     );
   }
 
@@ -80,12 +89,16 @@ class Course {
       description: data['description'] ?? '',
       topicsCovered: data['topicsCovered'] ?? '',
       isPaid: (data['isPaid'] ?? false) as bool,
-      pricePkr: (data['pricePkr'] as num?)?.toInt(),
+
+      /// 🔥 USD stored as double
+      priceUsd: (data['priceUsd'] as num?)?.toDouble(),
+
       category: data['category'] ?? 'General',
       buyUrl: data['buyUrl'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
       createdAt: _toDateTime(data['createdAt']),
       updatedAt: _toDateTime(data['updatedAt']),
+      instructors: (data['instructors'] as List?)?.whereType<String>().toList() ?? const [],
     );
   }
 
@@ -95,12 +108,16 @@ class Course {
       'description': description,
       'topicsCovered': topicsCovered,
       'isPaid': isPaid,
-      'pricePkr': pricePkr,
+
+      /// 🔥 Save USD only
+      'priceUsd': priceUsd,
+
       'category': category,
       'buyUrl': buyUrl,
       'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'instructors': instructors,
     };
   }
 

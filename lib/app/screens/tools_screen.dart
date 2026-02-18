@@ -51,12 +51,10 @@ class _ToolsScreenState extends State<ToolsScreen>
 
     // 🔌 Connectivity initialization
     _connStatus = ConnectivityService.instance.currentStatus;
-    _connSub =
-        ConnectivityService.instance.statusStream.listen((status) {
+    _connSub = ConnectivityService.instance.statusStream.listen((status) {
       if (!mounted) return;
 
-      final wasOffline =
-          _connStatus == AppConnectionStatus.offline;
+      final wasOffline = _connStatus == AppConnectionStatus.offline;
 
       setState(() => _connStatus = status);
 
@@ -161,8 +159,11 @@ class _ToolsScreenState extends State<ToolsScreen>
               dynamicCats.add(cat);
             }
           }
-          final dynamicCatList = ['All', ...dynamicCats.toList()
-            ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))];
+          final dynamicCatList = [
+            'All',
+            ...dynamicCats.toList()
+              ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))
+          ];
 
           final filtered = _applyFilters(allTools);
 
@@ -189,8 +190,8 @@ class _ToolsScreenState extends State<ToolsScreen>
                       prefixIcon: const Icon(Icons.search_rounded),
                       isDense: true,
                       filled: true,
-                      fillColor: cs.surfaceContainerHighest
-                          .withValues(alpha: 0.4),
+                      fillColor:
+                          cs.surfaceContainerHighest.withValues(alpha: 0.4),
                       contentPadding:
                           const EdgeInsets.symmetric(horizontal: 14),
                       focusedBorder: OutlineInputBorder(
@@ -249,17 +250,8 @@ class _ToolsScreenState extends State<ToolsScreen>
                           isSelected: isSelected,
                           onTap: () {
                             setState(() {
-                              if (cat == 'All') {
-                                // ✅ Clicking All in bottom row only resets category filter
-                                _categoryFilter = 'All';
-                              } else {
-                                // tap same category again -> clear category filter
-                                if (_categoryFilter == cat) {
-                                  _categoryFilter = 'All';
-                                } else {
-                                  _categoryFilter = cat;
-                                }
-                              }
+                              // ✅ Single-tap logic
+                              _categoryFilter = cat;
                             });
                           },
                         ),
@@ -287,8 +279,7 @@ class _ToolsScreenState extends State<ToolsScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 10),
                         itemCount: filtered.length,
-                        separatorBuilder: (_, __) =>
-                            const SizedBox(height: 8),
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final tool = filtered[index];
                           return ToolCard(
@@ -297,8 +288,7 @@ class _ToolsScreenState extends State<ToolsScreen>
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) =>
-                                      ToolDetailsScreen(tool: tool),
+                                  builder: (_) => ToolDetailsScreen(tool: tool),
                                 ),
                               );
                             },
@@ -395,9 +385,8 @@ class _FilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 14.5,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected
-                ? cs.primary
-                : cs.onSurface.withValues(alpha: 0.85),
+            color:
+                isSelected ? cs.primary : cs.onSurface.withValues(alpha: 0.85),
           ),
         ),
       ),

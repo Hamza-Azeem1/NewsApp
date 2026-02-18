@@ -44,7 +44,7 @@ class _EbookFormState extends State<EbookForm> {
     _imageUrlCtrl = TextEditingController(text: e?.imageUrl ?? '');
     _buyUrlCtrl = TextEditingController(text: e?.buyUrl ?? '');
     _priceCtrl = TextEditingController(
-      text: e?.pricePkr != null ? e!.pricePkr.toString() : '',
+      text: e?.priceUsd != null ? e!.priceUsd!.toString() : '',
     );
 
     _isPaid = e?.isPaid ?? false;
@@ -81,16 +81,16 @@ class _EbookFormState extends State<EbookForm> {
     if (!_formKey.currentState!.validate()) return;
 
     // validate price if paid
-    int? pricePkr;
+    double? priceUsd;
     if (_isPaid) {
       final raw = _priceCtrl.text.trim();
       if (raw.isEmpty) {
-        _showToast('Please enter price for paid ebooks');
+        _showToast('Please enter price for paid ebooks in USD');
         return;
       }
-      pricePkr = int.tryParse(raw);
-      if (pricePkr == null || pricePkr <= 0) {
-        _showToast('Please enter a valid PKR price');
+      priceUsd = double.tryParse(raw);
+      if (priceUsd == null || priceUsd <= 0) {
+        _showToast('Please enter a valid USD price');
         return;
       }
     }
@@ -120,7 +120,7 @@ class _EbookFormState extends State<EbookForm> {
         createdAt: base?.createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
         isPaid: _isPaid,
-        pricePkr: pricePkr,
+        priceUsd: priceUsd,
       );
 
       if (base == null) {
@@ -304,7 +304,7 @@ class _EbookFormState extends State<EbookForm> {
       padding: EdgeInsets.only(bottom: viewInsets),
       child: Center(
         child: SizedBox(
-          width: formWidth, // <-- wider inner form, but not edge-to-edge
+          width: formWidth,
           child: Card(
             elevation: 14,
             margin: const EdgeInsets.all(16),
@@ -503,9 +503,10 @@ class _EbookFormState extends State<EbookForm> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _priceCtrl,
-                        keyboardType: TextInputType.number,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(
-                          labelText: 'Price (PKR)',
+                          labelText: 'Price (USD)',
                           border: OutlineInputBorder(),
                         ),
                       ),

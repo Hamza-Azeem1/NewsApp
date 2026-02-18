@@ -45,7 +45,7 @@ class _ToolFormState extends State<ToolForm> {
     _imageUrlCtrl = TextEditingController(text: t.imageUrl);
     _isFree = t.isFree;
     _priceCtrl = TextEditingController(
-      text: t.price != null ? t.price!.toStringAsFixed(0) : '',
+      text: t.price != null ? t.price!.toStringAsFixed(2) : '',
     );
 
     // Pre-select categories from stored comma-separated string
@@ -79,14 +79,18 @@ class _ToolFormState extends State<ToolForm> {
       final raw = _priceCtrl.text.trim();
       if (raw.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter price for paid tools')),
+          const SnackBar(
+            content: Text('Please enter price for paid tools (USD)'),
+          ),
         );
         return;
       }
       price = double.tryParse(raw.replaceAll(',', ''));
       if (price == null || price < 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid PKR price')),
+          const SnackBar(
+            content: Text('Please enter a valid USD price'),
+          ),
         );
         return;
       }
@@ -114,7 +118,7 @@ class _ToolFormState extends State<ToolForm> {
         shortDesc: _shortDescCtrl.text.trim(),
         description: _descCtrl.text.trim(),
         isFree: _isFree,
-        price: price,
+        price: price, // USD
         toolLink: _toolLinkCtrl.text.trim(),
         imageUrl: _imageUrlCtrl.text.trim(),
         category: joinedCategories,
@@ -163,7 +167,8 @@ class _ToolFormState extends State<ToolForm> {
         final cs = Theme.of(ctx).colorScheme;
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
           backgroundColor: cs.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
@@ -224,8 +229,8 @@ class _ToolFormState extends State<ToolForm> {
 
                 if (options.isEmpty)
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 12),
                     child: Text(
                       'No existing categories yet.\nAdd one using the field above.',
                       textAlign: TextAlign.center,
@@ -252,9 +257,11 @@ class _ToolFormState extends State<ToolForm> {
                             ),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              color: cs.surfaceContainerHighest.withValues(alpha: 0.25),
+                              color: cs.surfaceContainerHighest
+                                  .withValues(alpha: 0.25),
                               border: Border.all(
-                                color: cs.outlineVariant.withValues(alpha: 0.4),
+                                color: cs.outlineVariant
+                                    .withValues(alpha: 0.4),
                                 width: 1.2,
                               ),
                             ),
@@ -457,7 +464,7 @@ class _ToolFormState extends State<ToolForm> {
                         keyboardType:
                             const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(
-                          labelText: 'Price (PKR)',
+                          labelText: 'Price (USD)',
                           border: OutlineInputBorder(),
                         ),
                       ),

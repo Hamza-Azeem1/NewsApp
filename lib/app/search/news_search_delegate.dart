@@ -52,7 +52,7 @@ class _ResultsList extends StatelessWidget {
           return inText(a.title) ||
               inText(a.subtitle) ||
               inText(a.description) ||
-              inText(a.category);
+              inText(a.primaryCategory);
         }
 
         final items = all.where(matches).toList();
@@ -151,7 +151,7 @@ class _NewsTile extends StatelessWidget {
 
                     // Meta (category • date)
                     _MetaLine(
-                      category: article.category,
+                      category: article.primaryCategory,
                       date: article.date,
                     ),
                   ],

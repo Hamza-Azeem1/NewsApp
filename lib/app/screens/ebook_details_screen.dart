@@ -32,15 +32,53 @@ class EbookDetailsScreen extends StatelessWidget {
         .toList();
 
     final priceLabel = ebook.isPaid
-        ? (ebook.pricePkr != null ? 'PKR ${ebook.pricePkr}' : 'Paid')
+        ? (ebook.priceUsd != null ? '\$ ${ebook.priceUsd!.toStringAsFixed(2)}' : 'Paid')
         : 'Free';
+
+    final hasLink = ebook.buyUrl.trim().isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Book details'),
       ),
+
+      // 🔹 Sticky Buy / Open button
+      bottomNavigationBar: hasLink
+          ? SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: FilledButton.icon(
+                    onPressed: () => _openBuyLink(context),
+                    icon: Icon(
+                      ebook.isPaid
+                          ? Icons.shopping_bag_outlined
+                          : Icons.menu_book_outlined,
+                    ),
+                    label: Text(
+                      ebook.isPaid ? 'Buy / Download' : 'Open / Read',
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : null,
+
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: EdgeInsets.only(bottom: hasLink ? 80 : 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -228,24 +266,7 @@ class EbookDetailsScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: ebook.buyUrl.trim().isEmpty
-                          ? null
-                          : () => _openBuyLink(context),
-                      icon: Icon(
-                        ebook.isPaid
-                            ? Icons.shopping_bag_outlined
-                            : Icons.menu_book_outlined,
-                      ),
-                      label: Text(
-                        ebook.isPaid ? 'Buy / Download' : 'Open / Read',
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),

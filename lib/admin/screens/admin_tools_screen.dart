@@ -57,7 +57,6 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadingCategories = false);
-      // ✅ Check mounted before using context
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load tool categories: $e')),
@@ -67,9 +66,8 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
   }
 
   Future<void> _openForm({Tool? initial}) async {
-    // ✅ Capture ScaffoldMessenger before async gap
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    
+
     final changed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -86,13 +84,14 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
     );
 
     if (!mounted) return;
-    
+
     if (changed == true) {
-      // ✅ Use captured ScaffoldMessenger
       scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text(
-            initial == null ? 'Tool added successfully' : 'Tool updated successfully',
+            initial == null
+                ? 'Tool added successfully'
+                : 'Tool updated successfully',
           ),
         ),
       );
@@ -101,10 +100,8 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
   }
 
   Future<void> _confirmDelete(Tool tool) async {
-    // ✅ Capture context-dependent objects before async gap
-    Navigator.of(context);
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    
+
     final ok = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
@@ -129,16 +126,14 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
     try {
       await _repo.deleteTool(tool.id);
       if (!mounted) return;
-      
-      // ✅ Use captured ScaffoldMessenger
+
       scaffoldMessenger.showSnackBar(
         const SnackBar(content: Text('Tool deleted')),
       );
       _loadCategories();
     } catch (e) {
       if (!mounted) return;
-      
-      // ✅ Use captured ScaffoldMessenger
+
       scaffoldMessenger.showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
@@ -195,6 +190,12 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
             itemBuilder: (context, index) {
               final tool = tools[index];
 
+              final priceText = tool.isFree
+                  ? 'Free'
+                  : (tool.price != null
+                      ? '\$${tool.price!.toStringAsFixed(2)}'
+                      : 'Paid');
+
               return ListTile(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -211,11 +212,7 @@ class _AdminToolsScreenState extends State<AdminToolsScreen> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
-                      tool.isFree
-                          ? 'Free'
-                          : (tool.price != null
-                              ? 'PKR ${tool.price!.toStringAsFixed(0)}'
-                              : 'Paid'),
+                      priceText,
                       style: t.labelMedium,
                     ),
                     IconButton(

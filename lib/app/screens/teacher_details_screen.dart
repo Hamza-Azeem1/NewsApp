@@ -31,6 +31,10 @@ class TeacherDetailsScreen extends StatelessWidget {
         ? teacher.categories
         : teacher.specializations;
 
+    // Sort socials a bit so "main" links appear first (optional)
+    final socialsEntries = teacher.socials.entries.toList()
+      ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase()));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Teacher profile'),
@@ -173,7 +177,7 @@ class TeacherDetailsScreen extends StatelessWidget {
             ],
 
             // Social links
-            if (teacher.socials.isNotEmpty) ...[
+            if (socialsEntries.isNotEmpty) ...[
               Text(
                 'Connect',
                 style: t.titleMedium?.copyWith(
@@ -184,13 +188,16 @@ class TeacherDetailsScreen extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: teacher.socials.entries.map((entry) {
+                children: socialsEntries.map((entry) {
                   final label = entry.key;
                   final url = entry.value;
                   return OutlinedButton.icon(
                     onPressed: () => _openLink(context, url),
-                    icon: Icon(_iconForLabel(label),
-                        size: 18, color: cs.primary),
+                    icon: Icon(
+                      _iconForSocial(label, url),
+                      size: 18,
+                      color: cs.primary,
+                    ),
                     label: Text(label),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
@@ -212,17 +219,55 @@ class TeacherDetailsScreen extends StatelessWidget {
     );
   }
 
-  IconData _iconForLabel(String label) {
-    final lower = label.toLowerCase();
-    if (lower.contains('linkedin')) return Icons.business_center_outlined;
-    if (lower.contains('twitter') || lower.contains('x')) {
+  IconData _iconForSocial(String label, String url) {
+    final lower = ('$label $url').toLowerCase();
+
+    if (lower.contains('linkedin') || lower.contains('lnkd.in')) {
+      return Icons.business_center_outlined;
+    }
+    if (lower.contains('twitter') || lower.contains('x.com')) {
       return Icons.alternate_email;
     }
-    if (lower.contains('facebook')) return Icons.facebook_outlined;
-    if (lower.contains('instagram')) return Icons.camera_alt_outlined;
-    if (lower.contains('youtube')) return Icons.ondemand_video_outlined;
-    if (lower.contains('whatsapp')) return Icons.chat_bubble_outline;
-    if (lower.contains('github')) return Icons.code;
+    if (lower.contains('facebook') || lower.contains('fb.com')) {
+      return Icons.facebook_outlined;
+    }
+    if (lower.contains('instagram') || lower.contains('insta')) {
+      return Icons.camera_alt_outlined;
+    }
+    if (lower.contains('youtube') || lower.contains('youtu.be')) {
+      return Icons.ondemand_video_outlined;
+    }
+    if (lower.contains('tiktok')) {
+      return Icons.music_note;
+    }
+    if (lower.contains('github')) {
+      return Icons.code;
+    }
+    if (lower.contains('medium.com')) {
+      return Icons.article_outlined;
+    }
+
+    // Very basic email / mailto detection
+    final emailReg = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    if (lower.contains('mailto:') || emailReg.hasMatch(url)) {
+      return Icons.email_outlined;
+    }
+
+    // Very basic phone / WhatsApp detection
+    final phoneReg = RegExp(r'^\+?[0-9]{6,}$');
+    if (lower.contains('whatsapp') ||
+        lower.startsWith('tel:') ||
+        phoneReg.hasMatch(url.replaceAll(' ', ''))) {
+      return Icons.phone_outlined;
+    }
+
+    if (lower.contains('website') ||
+        lower.contains('site') ||
+        lower.startsWith('http://') ||
+        lower.startsWith('https://')) {
+      return Icons.language;
+    }
+
     return Icons.link;
   }
 }

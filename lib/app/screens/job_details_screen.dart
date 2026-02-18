@@ -31,12 +31,44 @@ class JobDetailsScreen extends StatelessWidget {
         .where((e) => e.isNotEmpty)
         .toList();
 
+    final hasLink = job.applyLink.trim().isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Job details'),
       ),
+
+      // 🔹 Sticky "Apply now" button
+      bottomNavigationBar: hasLink
+          ? SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: FilledButton.icon(
+                    onPressed: () => _openApply(context),
+                    icon: const Icon(Icons.open_in_new_rounded),
+                    label: const Text('Apply now'),
+                  ),
+                ),
+              ),
+            )
+          : null,
+
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, hasLink ? 80 : 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -100,16 +132,7 @@ class JobDetailsScreen extends StatelessWidget {
               style: t.bodyLarge?.copyWith(height: 1.5),
             ),
 
-            const SizedBox(height: 24),
-
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => _openApply(context),
-                icon: const Icon(Icons.open_in_new_rounded),
-                label: const Text('Apply now'),
-              ),
-            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -117,8 +140,11 @@ class JobDetailsScreen extends StatelessWidget {
   }
 
   /// Reusable pill-style chip (same vibe as JobCard)
-  Widget _pill(BuildContext context,
-      {required IconData icon, required String label}) {
+  Widget _pill(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+  }) {
     final cs = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
 

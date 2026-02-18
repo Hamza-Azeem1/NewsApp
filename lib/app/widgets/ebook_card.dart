@@ -25,10 +25,11 @@ class EbookCard extends StatelessWidget {
     final cs = theme.colorScheme;
 
     final priceLabel = ebook.isPaid
-        ? (ebook.pricePkr != null ? 'PKR ${ebook.pricePkr}' : 'Paid')
+        ? (ebook.priceUsd != null
+            ? '\$${ebook.priceUsd!.toStringAsFixed(2)}'
+            : 'Paid')
         : 'Free';
 
-    // Split categories like "Marketing, SEO" -> ["Marketing", "SEO"]
     final categoryTags = ebook.category
         .split(',')
         .map((s) => s.trim())
@@ -36,203 +37,167 @@ class EbookCard extends StatelessWidget {
         .toList();
 
     return Card(
-      elevation: 6,
+      elevation: 4,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => _openDetails(context),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // IMAGE
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.network(
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 🔹 BOOK IMAGE LEFT
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 100,
+                  height: 140,
+                  child: Image.network(
                     ebook.imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: theme.colorScheme.surfaceContainerHighest,
+                    errorBuilder: (context, error, stackTrace) =>
+                        Container(
+                      color: cs.surfaceContainerHighest,
                       alignment: Alignment.center,
-                      child: const Icon(Icons.book_outlined, size: 48),
+                      child: const Icon(Icons.book_outlined, size: 40),
                     ),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withValues(alpha: 0.6),
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.75),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
+                ),
+              ),
 
-                  // Category chips (multiple)
-                  if (categoryTags.isNotEmpty)
-                    Positioned(
-                      left: 12,
-                      right: 12,
-                      top: 12,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: categoryTags.map((cat) {
-                            return Container(
-                              margin: const EdgeInsets.only(right: 6),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    Colors.black.withValues(alpha: 0.55),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.category,
-                                    size: 15,
-                                    color: Colors.white70,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    cat,
-                                    style: theme.textTheme.labelSmall
-                                        ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
+              const SizedBox(width: 12),
 
-                  // Title
-                  Positioned(
-                    left: 16,
-                    right: 16,
-                    bottom: 16,
-                    child: Text(
+              // 🔹 TEXT DETAILS RIGHT
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title
+                    Text(
                       ebook.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        shadows: const [
-                          Shadow(
-                            blurRadius: 4,
-                            color: Colors.black54,
-                          ),
-                        ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    const SizedBox(height: 4),
 
-            // DETAILS
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'by ${ebook.author}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+                    // Author
+                    Text(
+                      'by ${ebook.author}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    ebook.description,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.8),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 6),
 
-                  // 🔹 Free/Paid + price row
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: ebook.isPaid
-                              ? cs.errorContainer.withValues(alpha: 0.4)
-                              : cs.primaryContainer.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          ebook.isPaid ? 'Paid' : 'Free',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: ebook.isPaid ? cs.error : cs.primary,
-                          ),
+                    // Short description preview
+                    Text(
+                      ebook.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurface.withOpacity(0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Categories
+                    if (categoryTags.isNotEmpty)
+                      SizedBox(
+                        height: 24,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: categoryTags.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 6),
+                          itemBuilder: (context, index) {
+                            final cat = categoryTags[index];
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.55),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                cat,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        priceLabel,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+                    const SizedBox(height: 8),
 
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () => _openDetails(context),
-                          icon: Icon(
-                            ebook.isPaid
-                                ? Icons.info_outline
-                                : Icons.menu_book_outlined,
+                    // Price row
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
                           ),
-                          label: const Text('View details'),
-                          style: FilledButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          decoration: BoxDecoration(
+                            color: ebook.isPaid
+                                ? cs.errorContainer.withOpacity(0.4)
+                                : cs.primaryContainer.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            ebook.isPaid ? 'Paid' : 'Free',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: ebook.isPaid ? cs.error : cs.primary,
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        Text(
+                          priceLabel,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // View Details button
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () => _openDetails(context),
+                        icon: Icon(
+                          ebook.isPaid
+                              ? Icons.info_outline
+                              : Icons.menu_book_outlined,
+                        ),
+                        label: const Text('View Details'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
-                    ],
-                  )
-                ],
+                    ),
+                  ],
+                ),
               ),
-            )
-          ],
+            ],
+          ),
         ),
       ),
     );

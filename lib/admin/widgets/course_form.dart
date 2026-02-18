@@ -35,6 +35,9 @@ class _CourseFormState extends State<CourseForm> {
   /// Multiple selected categories
   Set<String> _selectedCategories = {};
 
+  /// Multiple instructors
+  final Set<String> _instructors = {};
+
   @override
   void initState() {
     super.initState();
@@ -43,7 +46,12 @@ class _CourseFormState extends State<CourseForm> {
     _titleCtrl = TextEditingController(text: c.title);
     _descCtrl = TextEditingController(text: c.description);
     _topicsCtrl = TextEditingController(text: c.topicsCovered);
-    _priceCtrl = TextEditingController(text: c.pricePkr?.toString() ?? '');
+
+    // 🔥 Now using USD instead of PKR
+    _priceCtrl = TextEditingController(
+      text: c.priceUsd?.toString() ?? '',
+    );
+
     _buyUrlCtrl = TextEditingController(text: c.buyUrl);
     _imageUrlCtrl = TextEditingController(text: c.imageUrl);
     _isPaid = c.isPaid;
@@ -61,6 +69,9 @@ class _CourseFormState extends State<CourseForm> {
           })
           .toSet();
     }
+
+    // Instructors from model
+    _instructors.addAll(c.instructors);
   }
 
   @override
@@ -79,7 +90,7 @@ class _CourseFormState extends State<CourseForm> {
 
     if (_isPaid && _priceCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter price in PKR')),
+        const SnackBar(content: Text('Please enter price in USD')),
       );
       return;
     }
@@ -94,22 +105,33 @@ class _CourseFormState extends State<CourseForm> {
     setState(() => _saving = true);
 
     final base = widget.initial ?? Course.empty();
-    final price = _isPaid ? int.tryParse(_priceCtrl.text.trim()) : null;
+
+    // 🔥 Parse USD as double
+    final price =
+        _isPaid ? double.tryParse(_priceCtrl.text.trim()) : null;
 
     // Store categories as comma-separated string (sorted)
     final sortedCats = _selectedCategories.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     final joinedCategories = sortedCats.join(', ');
 
+    // Instructors sorted
+    final instructorList = _instructors.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
     final course = base.copyWith(
       title: _titleCtrl.text.trim(),
       description: _descCtrl.text.trim(),
       topicsCovered: _topicsCtrl.text.trim(),
       isPaid: _isPaid,
-      pricePkr: price,
+
+      // 🔥 Save USD into model
+      priceUsd: price,
+
       category: joinedCategories,
       buyUrl: _buyUrlCtrl.text.trim(),
       imageUrl: _imageUrlCtrl.text.trim(),
+      instructors: instructorList,
     );
 
     try {
@@ -154,13 +176,15 @@ class _CourseFormState extends State<CourseForm> {
         final cs = Theme.of(ctx).colorScheme;
 
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
           backgroundColor: cs.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            padding:
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -215,8 +239,8 @@ class _CourseFormState extends State<CourseForm> {
 
                 if (options.isEmpty)
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 12),
                     child: Text(
                       'No existing categories yet.\nAdd one using the field above.',
                       textAlign: TextAlign.center,
@@ -237,16 +261,19 @@ class _CourseFormState extends State<CourseForm> {
                           borderRadius: BorderRadius.circular(10),
                           onTap: () => Navigator.of(ctx).pop(cat),
                           child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            margin:
+                                const EdgeInsets.symmetric(vertical: 4),
                             padding: const EdgeInsets.symmetric(
                               vertical: 10,
                               horizontal: 12,
                             ),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              color: cs.surfaceContainerHighest.withValues(alpha: .25),
+                              color: cs.surfaceContainerHighest
+                                  .withValues(alpha: .25),
                               border: Border.all(
-                                color: cs.outlineVariant.withValues(alpha: .4),
+                                color: cs.outlineVariant
+                                    .withValues(alpha: .4),
                                 width: 1.2,
                               ),
                             ),
@@ -305,8 +332,8 @@ class _CourseFormState extends State<CourseForm> {
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 18, vertical: 16),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -320,12 +347,14 @@ class _CourseFormState extends State<CourseForm> {
                               style: Theme.of(context)
                                   .textTheme
                                   .titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.w700),
+                                  ?.copyWith(
+                                      fontWeight: FontWeight.w700),
                             ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.of(context).pop(false),
+                            onPressed: () =>
+                                Navigator.of(context).pop(false),
                           ),
                         ],
                       ),
@@ -337,7 +366,9 @@ class _CourseFormState extends State<CourseForm> {
                           prefixIcon: Icon(Icons.school),
                         ),
                         validator: (v) =>
-                            v == null || v.trim().isEmpty ? 'Required' : null,
+                            v == null || v.trim().isEmpty
+                                ? 'Required'
+                                : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -360,6 +391,32 @@ class _CourseFormState extends State<CourseForm> {
                         maxLines: 4,
                       ),
                       const SizedBox(height: 12),
+
+                      /// 🔥 Instructors
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Instructor(s)',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      _ChipsEditor(
+                        values: _instructors,
+                        hint: 'Add instructor name (e.g. Ali Khan)',
+                        onChanged: (values) {
+                          setState(() {
+                            _instructors
+                              ..clear()
+                              ..addAll(values);
+                          });
+                        },
+                      ),
+
+                      const SizedBox(height: 12),
                       SwitchListTile(
                         title: const Text('Paid course'),
                         value: _isPaid,
@@ -370,15 +427,24 @@ class _CourseFormState extends State<CourseForm> {
                         TextFormField(
                           controller: _priceCtrl,
                           decoration: const InputDecoration(
-                            labelText: 'Price (PKR)',
-                            prefixIcon: Icon(Icons.currency_rupee),
+                            labelText: 'Price (USD)',
+                            prefixIcon: Icon(Icons.attach_money),
                           ),
-                          keyboardType: TextInputType.number,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(
+                                  decimal: true),
+                          validator: (v) {
+                            if (_isPaid &&
+                                (v == null || v.trim().isEmpty)) {
+                              return 'Enter price in USD';
+                            }
+                            return null;
+                          },
                         ),
                       ],
                       const SizedBox(height: 12),
 
-                      /// 🔥 New category styling (matches EbookForm)
+                      /// Categories
                       InputDecorator(
                         decoration: const InputDecoration(
                           labelText: 'Categories',
@@ -401,19 +467,22 @@ class _CourseFormState extends State<CourseForm> {
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 4,
-                                children: _selectedCategories.map((cat) {
+                                children:
+                                    _selectedCategories.map((cat) {
                                   return InputChip(
                                     label: Text(cat),
                                     onDeleted: () {
                                       setState(() {
-                                        _selectedCategories.remove(cat);
+                                        _selectedCategories
+                                            .remove(cat);
                                       });
                                     },
                                     deleteIcon: const Icon(
                                       Icons.close,
                                       size: 16,
                                     ),
-                                    visualDensity: VisualDensity.compact,
+                                    visualDensity:
+                                        VisualDensity.compact,
                                   );
                                 }).toList(),
                               ),
@@ -462,8 +531,11 @@ class _CourseFormState extends State<CourseForm> {
                                   ),
                                 )
                               : const Icon(Icons.save),
-                          label:
-                              Text(isEdit ? 'Save changes' : 'Create course'),
+                          label: Text(
+                            isEdit
+                                ? 'Save changes'
+                                : 'Create course',
+                          ),
                           style: FilledButton.styleFrom(
                             backgroundColor: cs.primary,
                           ),
@@ -477,6 +549,96 @@ class _CourseFormState extends State<CourseForm> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Simple chips editor (same pattern as in TeacherForm)
+class _ChipsEditor extends StatefulWidget {
+  final Set<String> values;
+  final String hint;
+  final ValueChanged<Set<String>> onChanged;
+
+  const _ChipsEditor({
+    required this.values,
+    required this.hint,
+    required this.onChanged,
+  });
+
+  @override
+  State<_ChipsEditor> createState() => _ChipsEditorState();
+}
+
+class _ChipsEditorState extends State<_ChipsEditor> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _addFromText() {
+    final text = _ctrl.text.trim();
+    if (text.isEmpty) return;
+    final next = {...widget.values, text};
+    widget.onChanged(next);
+    _ctrl.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: widget.values.map((v) {
+            return Chip(
+              label: Text(v),
+              onDeleted: () {
+                final next = {...widget.values}..remove(v);
+                widget.onChanged(next);
+              },
+              deleteIcon: const Icon(Icons.close, size: 16),
+              visualDensity: VisualDensity.compact,
+            );
+          }).toList(),
+        ),
+        TextField(
+          controller: _ctrl,
+          decoration: InputDecoration(
+            hintText: widget.hint,
+            isDense: true,
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: _addFromText,
+            ),
+            border: const OutlineInputBorder(),
+          ),
+          onSubmitted: (_) => _addFromText(),
+        ),
+        if (widget.values.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'No items yet',
+              style: t.labelSmall?.copyWith(
+                color: cs.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

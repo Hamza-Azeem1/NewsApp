@@ -22,7 +22,7 @@ dependencies:
   connectivity_plus: ^6.0.0
   internet_connection_checker: ^1.0.0
   video_player: ^2.9.0
-  youtube_player_iframe: ^5.1.2
+  youtube_player_iframe: ^5.2.2
 
 dev_dependencies:
   flutter_test:

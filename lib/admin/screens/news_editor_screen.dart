@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/admin_news_repository.dart';
@@ -22,8 +21,10 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
 
   bool _busy = false;
 
-  // 🔽 Category state
-  List<String> _categories = [];
+  // MULTI CATEGORY
+  List<String> _allCategories = [];
+  List<String> _selectedCategories = [];
+
   bool _loadingCategories = true;
 
   @override
@@ -32,75 +33,87 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
     _loadCategories();
   }
 
-  /// 🔥 Load distinct category strings from the `news` collection.
+  /// Load all category options + merge with categories from initial doc
   Future<void> _loadCategories() async {
     try {
-      final snap =
-          await FirebaseFirestore.instance.collection('news').get();
+      final snap = await FirebaseFirestore.instance.collection('news').get();
 
-      final names = snap.docs
-          .map((d) => (d.data()['category'] ?? '').toString().trim())
-          .where((name) => name.isNotEmpty)
-          .toSet()
-          .toList();
+      final setCats = <String>{};
 
-      names.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+      for (final doc in snap.docs) {
+        final c = doc.data()['categories']; // new structure (list)
+        final oldSingle = doc.data()['category']; // old structure (string)
 
-      final filtered = names
-          .where((n) => n.toLowerCase() != 'all')
-          .toList(); // avoid any "All" if present
+        if (c is List) {
+          for (final x in c) {
+            if (x.toString().trim().isNotEmpty) {
+              setCats.add(x.toString().trim());
+            }
+          }
+        }
 
-      // Make sure existing category (when editing) is present even if
-      // there are no other docs with that category.
-      final initialCat = (widget.initial?['category'] ?? '').toString();
-      if (initialCat.isNotEmpty && !filtered.contains(initialCat)) {
-        filtered.insert(0, initialCat);
+        if (oldSingle != null && oldSingle is String) {
+          if (oldSingle.trim().isNotEmpty) setCats.add(oldSingle.trim());
+        }
+      }
+
+      final list = setCats.toList()
+        ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+      // Pre-fill selected categories when editing
+      if (widget.initial != null) {
+        final initCats = widget.initial!['categories'];
+        final oldSingle = widget.initial!['category'];
+
+        if (initCats is List) {
+          _selectedCategories = initCats.map((e) => e.toString()).toList();
+        } else if (oldSingle is String && oldSingle.trim().isNotEmpty) {
+          _selectedCategories = [oldSingle.trim()];
+        }
       }
 
       setState(() {
-        _categories = filtered;
+        _allCategories = list;
         _loadingCategories = false;
       });
     } catch (e) {
       setState(() {
-        _categories = [];
         _loadingCategories = false;
       });
-      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to load categories: $e')),
       );
     }
   }
 
+  /// SUBMIT FORM
   Future<void> _handleSubmit({
-    required String category,
+    required List<String> categories,
     required String title,
     required String subtitle,
     required String description,
     required Uint8List? imageBytes,
     required String? imageExt,
-    required String? imageUrl, // from URL mode
-    required String? newsUrl, // 🔗 external news link
+    required String? imageUrl,
+    required String? newsUrl,
   }) async {
     setState(() => _busy = true);
+
     try {
-      // EDIT mode
+      // --- EDIT MODE ---
       if (widget.docId != null) {
         final updates = <String, dynamic>{
-          'category': category,
+          'categories': categories,
           'title': title,
           'subtitle': subtitle,
           'description': description,
-          'newsUrl': newsUrl, // can be null/empty to clear
+          'newsUrl': newsUrl,
         };
 
-        // If URL provided, prefer it
         if (imageUrl != null && imageUrl.isNotEmpty) {
           updates['imageUrl'] = imageUrl;
-        }
-        // Else if file selected and Storage is available
-        else if (imageBytes != null && imageBytes.isNotEmpty) {
+        } else if (imageBytes != null && imageBytes.isNotEmpty) {
           try {
             final url = await _storage.uploadNewsImage(
               docId: widget.docId!,
@@ -109,34 +122,32 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
             );
             updates['imageUrl'] = url;
           } catch (e) {
-            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Image upload failed. You can paste an Image URL instead.\n$e',
-                ),
-              ),
+              SnackBar(content: Text('Image upload failed: $e')),
             );
           }
         }
 
         await _repo.updateNews(widget.docId!, updates);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Updated')));
-        Navigator.pop(context);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('Updated')));
+          Navigator.pop(context);
+        }
+
         return;
       }
 
-      // CREATE mode
+      // --- CREATE MODE ---
       final docId = await _repo.createNews(
-        category: category,
+        categories: categories,
         title: title,
         subtitle: subtitle,
         description: description,
         date: DateTime.now(),
-        imageUrl: imageUrl ?? '', // use URL immediately if given
-        newsUrl: newsUrl, // 🔗 pass through
+        imageUrl: imageUrl ?? '',
+        newsUrl: newsUrl,
       );
 
       if (imageUrl == null && imageBytes != null && imageBytes.isNotEmpty) {
@@ -146,25 +157,21 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
             bytes: imageBytes,
             ext: (imageExt ?? 'jpg').toLowerCase(),
           );
+
           await _repo.updateNews(docId, {'imageUrl': url});
         } catch (e) {
-          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Image upload failed. You can paste an Image URL instead.\n$e',
-              ),
-            ),
+            SnackBar(content: Text('Image upload failed: $e')),
           );
         }
       }
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Published')));
-      Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Published')));
+        Navigator.pop(context);
+      }
     } catch (e) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
@@ -176,34 +183,20 @@ class _NewsEditorScreenState extends State<NewsEditorScreen> {
   Widget build(BuildContext context) {
     final editing = widget.docId != null;
 
-    Widget bodyChild;
-
-    if (_busy) {
-      bodyChild = const Center(child: CircularProgressIndicator());
-    } else if (_loadingCategories) {
-      bodyChild = const Center(child: CircularProgressIndicator());
-    } else if (_categories.isEmpty) {
-      bodyChild = const Center(
-        child: Text(
-          'No categories found.\nAdd at least one news document with a category first.',
-          textAlign: TextAlign.center,
-        ),
-      );
-    } else {
-      bodyChild = SingleChildScrollView(
-        child: NewsForm(
-          onSubmit: _handleSubmit,
-          initial: widget.initial,
-          categories: _categories,
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(title: Text(editing ? 'Edit News' : 'Create News')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: bodyChild,
+        child: _busy || _loadingCategories
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: NewsForm(
+                  onSubmit: _handleSubmit,
+                  initial: widget.initial,
+                  allCategories: _allCategories,
+                  initialSelectedCategories: _selectedCategories,
+                ),
+              ),
       ),
     );
   }

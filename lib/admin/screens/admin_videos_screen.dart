@@ -3,13 +3,53 @@ import 'package:flutter/material.dart';
 
 import 'video_editor_screen.dart';
 
-class AdminVideosScreen extends StatelessWidget {
+class AdminVideosScreen extends StatefulWidget {
   const AdminVideosScreen({super.key});
 
   @override
+  State<AdminVideosScreen> createState() => _AdminVideosScreenState();
+}
+
+class _AdminVideosScreenState extends State<AdminVideosScreen> {
+  static const int _ttlDays = 10;
+
+  @override
+  void initState() {
+    super.initState();
+    _cleanupOldVideos();
+  }
+
+  /// 🔥 Permanently delete videos older than 10 days
+  Future<void> _cleanupOldVideos() async {
+    final cutoff = Timestamp.fromDate(
+      DateTime.now().subtract(const Duration(days: _ttlDays)),
+    );
+
+    final snap = await FirebaseFirestore.instance
+        .collection('videos')
+        .where('createdAt', isLessThan: cutoff)
+        .get();
+
+    if (snap.docs.isEmpty) return;
+
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (final doc in snap.docs) {
+      batch.delete(doc.reference);
+    }
+
+    await batch.commit();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final cutoff = Timestamp.fromDate(
+      DateTime.now().subtract(const Duration(days: _ttlDays)),
+    );
+
     final query = FirebaseFirestore.instance
         .collection('videos')
+        .where('createdAt', isGreaterThanOrEqualTo: cutoff)
         .orderBy('createdAt', descending: true);
 
     return Scaffold(
@@ -35,6 +75,7 @@ class AdminVideosScreen extends StatelessWidget {
               child: Text('Error: ${snapshot.error}'),
             );
           }
+
           if (!snapshot.hasData) {
             return const Center(
               child: CircularProgressIndicator(),
@@ -42,9 +83,10 @@ class AdminVideosScreen extends StatelessWidget {
           }
 
           final docs = snapshot.data!.docs;
+
           if (docs.isEmpty) {
             return const Center(
-              child: Text('No videos added yet.'),
+              child: Text('No videos from last 10 days.'),
             );
           }
 
@@ -55,9 +97,11 @@ class AdminVideosScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final doc = docs[index];
               final data = doc.data();
+
               final title = data['title'] as String? ?? '';
               final category = data['category'] as String? ?? '';
-              final openInBrowser = data['openInBrowser'] as bool? ?? false;
+              final openInBrowser =
+                  data['openInBrowser'] as bool? ?? false;
 
               return ListTile(
                 leading: CircleAvatar(

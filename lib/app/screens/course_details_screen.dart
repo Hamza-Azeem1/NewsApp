@@ -31,15 +31,54 @@ class CourseDetailsScreen extends StatelessWidget {
         .toList();
 
     final priceLabel = course.isPaid
-        ? (course.pricePkr != null ? 'PKR ${course.pricePkr}' : 'Paid')
-        : 'Free';
+    ? (course.priceUsd != null ? '\$${course.priceUsd!.toStringAsFixed(2)}' : 'Paid')
+    : 'Free';
+
+
+    final hasLink = course.buyUrl.trim().isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Course details'),
       ),
+
+      // 🔹 Sticky Buy / Start button
+      bottomNavigationBar: hasLink
+          ? SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: FilledButton.icon(
+                    onPressed: () => _openCourseLink(context),
+                    icon: Icon(
+                      course.isPaid
+                          ? Icons.shopping_cart_outlined
+                          : Icons.play_circle_outline,
+                    ),
+                    label: Text(
+                      course.isPaid ? 'Buy / Enroll now' : 'Start course',
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : null,
+
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: EdgeInsets.only(bottom: hasLink ? 80 : 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -202,7 +241,51 @@ class CourseDetailsScreen extends StatelessWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+
+                  // 🔥 Instructors block
+                  if (course.instructors.isNotEmpty) ...[
+                    Text(
+                      'Instructor${course.instructors.length > 1 ? 's' : ''}',
+                      style: t.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Names list
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: course.instructors.map((name) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: cs.surfaceContainerHighest
+                                .withValues(alpha: 0.35),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.person_outline, size: 16),
+                              const SizedBox(width: 6),
+                              Text(
+                                name,
+                                style: t.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
 
                   // Topics covered
                   if (course.topicsCovered.isNotEmpty) ...[
@@ -235,24 +318,6 @@ class CourseDetailsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
                   ],
-
-                  // CTA button
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: course.buyUrl.trim().isEmpty
-                          ? null
-                          : () => _openCourseLink(context),
-                      icon: Icon(
-                        course.isPaid
-                            ? Icons.shopping_cart_outlined
-                            : Icons.play_circle_outline,
-                      ),
-                      label: Text(
-                        course.isPaid ? 'Buy / Enroll now' : 'Start course',
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),

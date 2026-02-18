@@ -12,8 +12,8 @@ class Ebook {
   final DateTime updatedAt;
 
   /// 🔹 Pricing
-  final bool isPaid;      // true = paid, false = free
-  final int? pricePkr;    // null for free or unknown
+  final bool isPaid;       // true = paid, false = free
+  final double? priceUsd;  // null for free or unknown
 
   Ebook({
     required this.id,
@@ -26,7 +26,7 @@ class Ebook {
     required this.createdAt,
     required this.updatedAt,
     required this.isPaid,
-    this.pricePkr,
+    this.priceUsd,
   });
 
   factory Ebook.empty() {
@@ -42,7 +42,7 @@ class Ebook {
       createdAt: now,
       updatedAt: now,
       isPaid: false,
-      pricePkr: null,
+      priceUsd: null,
     );
   }
 
@@ -57,7 +57,7 @@ class Ebook {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isPaid,
-    int? pricePkr,
+    double? priceUsd,
   }) {
     return Ebook(
       id: id ?? this.id,
@@ -70,7 +70,7 @@ class Ebook {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isPaid: isPaid ?? this.isPaid,
-      pricePkr: pricePkr ?? this.pricePkr,
+      priceUsd: priceUsd ?? this.priceUsd,
     );
   }
 
@@ -81,12 +81,16 @@ class Ebook {
     final rawIsPaid = data['isPaid'];
     final bool isPaid = rawIsPaid is bool ? rawIsPaid : false;
 
-    int? pricePkr;
-    final rawPrice = data['pricePkr'];
-    if (rawPrice is int) {
-      pricePkr = rawPrice;
-    } else if (rawPrice is num) {
-      pricePkr = rawPrice.toInt();
+    double? priceUsd;
+    final rawUsd = data['priceUsd'];
+    if (rawUsd is num) {
+      priceUsd = rawUsd.toDouble();
+    } else {
+      // optional: fallback if old docs still have pricePkr
+      final rawPkr = data['pricePkr'];
+      if (rawPkr is num) {
+        priceUsd = rawPkr.toDouble();
+      }
     }
 
     return Ebook(
@@ -102,7 +106,7 @@ class Ebook {
       updatedAt:
           (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isPaid: isPaid,
-      pricePkr: pricePkr,
+      priceUsd: priceUsd,
     );
   }
 
@@ -114,10 +118,10 @@ class Ebook {
       'category': category,
       'imageUrl': imageUrl,
       'buyUrl': buyUrl,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
       'isPaid': isPaid,
-      'pricePkr': pricePkr,
+      'priceUsd': priceUsd,
     };
   }
 }

@@ -26,13 +26,6 @@ class _TeacherFormState extends State<TeacherForm> {
   late TextEditingController _introCtrl;
   late TextEditingController _imageUrlCtrl;
 
-  // Socials
-  late TextEditingController _websiteCtrl;
-  late TextEditingController _linkedinCtrl;
-  late TextEditingController _twitterCtrl;
-  late TextEditingController _facebookCtrl;
-  late TextEditingController _instagramCtrl;
-
   // Lists
   final Set<String> _specializations = {};
   final Set<String> _qualifications = {};
@@ -40,6 +33,9 @@ class _TeacherFormState extends State<TeacherForm> {
   // Categories
   final Set<String> _selectedCategories = {};
   List<String> _allCategories = [];
+
+  // Dynamic social links
+  late List<_SocialLinkEntry> _socialLinks;
 
   bool _saving = false;
 
@@ -56,13 +52,8 @@ class _TeacherFormState extends State<TeacherForm> {
     _qualifications.addAll(t.qualifications);
     _selectedCategories.addAll(t.categories);
 
-    _websiteCtrl = TextEditingController(text: t.socials['Website'] ?? '');
-    _linkedinCtrl = TextEditingController(text: t.socials['LinkedIn'] ?? '');
-    _twitterCtrl = TextEditingController(
-      text: t.socials['Twitter / X'] ?? t.socials['Twitter'] ?? '',
-    );
-    _facebookCtrl = TextEditingController(text: t.socials['Facebook'] ?? '');
-    _instagramCtrl = TextEditingController(text: t.socials['Instagram'] ?? '');
+    // Build dynamic social links list from existing map
+    _socialLinks = _buildInitialSocialLinks(t.socials);
 
     _loadExistingCategories();
 
@@ -70,6 +61,95 @@ class _TeacherFormState extends State<TeacherForm> {
     _imageUrlCtrl.addListener(() {
       if (mounted) setState(() {});
     });
+  }
+
+  List<_SocialLinkEntry> _buildInitialSocialLinks(
+    Map<String, String> socials,
+  ) {
+    final List<_SocialLinkEntry> list = [];
+    int counter = 0;
+
+    socials.forEach((key, value) {
+      final url = value.trim();
+      if (url.isEmpty) return;
+
+      final label = _guessPlatformLabel(key, url);
+      list.add(
+        _SocialLinkEntry(
+          id: 'init_$counter',
+          label: label,
+          url: url,
+        ),
+      );
+      counter++;
+    });
+
+    return list;
+  }
+
+  String _guessPlatformLabel(String key, String url) {
+    final lower = ('$key $url').toLowerCase();
+
+    if (lower.contains('linkedin') || lower.contains('lnkd.in')) {
+      return 'LinkedIn';
+    }
+    if (lower.contains('twitter') || lower.contains('x.com')) {
+      return 'Twitter / X';
+    }
+    if (lower.contains('facebook') || lower.contains('fb.com')) {
+      return 'Facebook';
+    }
+    if (lower.contains('instagram') || lower.contains('insta')) {
+      return 'Instagram';
+    }
+    if (lower.contains('youtube') || lower.contains('youtu.be')) {
+      return 'YouTube';
+    }
+    if (lower.contains('tiktok')) {
+      return 'TikTok';
+    }
+    if (lower.contains('github')) {
+      return 'GitHub';
+    }
+    if (lower.contains('medium.com')) {
+      return 'Medium';
+    }
+
+    // Very simple email detection
+    final emailReg = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+    if (lower.contains('mailto:') || emailReg.hasMatch(url)) {
+      return 'Email';
+    }
+
+    // Very simple phone / WhatsApp detection
+    final phoneReg = RegExp(r'^\+?[0-9]{6,}$');
+    if (lower.startsWith('tel:') || phoneReg.hasMatch(url.replaceAll(' ', ''))) {
+      return 'Phone / WhatsApp';
+    }
+
+    if (lower.startsWith('http://') || lower.startsWith('https://')) {
+      return 'Website';
+    }
+
+    return key.isNotEmpty ? key : 'Other';
+  }
+
+  IconData _iconForLabel(String label) {
+    final lower = label.toLowerCase();
+    if (lower.contains('linkedin')) return Icons.business_center_outlined;
+    if (lower.contains('twitter') || lower.contains('x')) {
+      return Icons.alternate_email;
+    }
+    if (lower.contains('facebook')) return Icons.facebook_outlined;
+    if (lower.contains('instagram')) return Icons.camera_alt_outlined;
+    if (lower.contains('youtube')) return Icons.play_circle_outline;
+    if (lower.contains('tiktok')) return Icons.music_note;
+    if (lower.contains('email')) return Icons.email_outlined;
+    if (lower.contains('phone') || lower.contains('whatsapp')) {
+      return Icons.phone_outlined;
+    }
+    if (lower.contains('website')) return Icons.language;
+    return Icons.link;
   }
 
   Future<void> _loadExistingCategories() async {
@@ -103,11 +183,6 @@ class _TeacherFormState extends State<TeacherForm> {
     _nameCtrl.dispose();
     _introCtrl.dispose();
     _imageUrlCtrl.dispose();
-    _websiteCtrl.dispose();
-    _linkedinCtrl.dispose();
-    _twitterCtrl.dispose();
-    _facebookCtrl.dispose();
-    _instagramCtrl.dispose();
     super.dispose();
   }
 
@@ -132,17 +207,27 @@ class _TeacherFormState extends State<TeacherForm> {
     final quals = _qualifications.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
+    // Build socials map from dynamic links
     final socials = <String, String>{};
-    void addSocial(String key, String value) {
-      final v = value.trim();
-      if (v.isNotEmpty) socials[key] = v;
-    }
 
-    addSocial('Website', _websiteCtrl.text);
-    addSocial('LinkedIn', _linkedinCtrl.text);
-    addSocial('Twitter / X', _twitterCtrl.text);
-    addSocial('Facebook', _facebookCtrl.text);
-    addSocial('Instagram', _instagramCtrl.text);
+    for (final link in _socialLinks) {
+      final url = link.url.trim();
+      if (url.isEmpty) continue;
+
+      String label = link.label.trim();
+      if (label.isEmpty) {
+        label = _guessPlatformLabel('', url);
+      }
+
+      // Ensure unique keys so we don't overwrite when there are multiple websites, etc.
+      var finalLabel = label;
+      var idx = 2;
+      while (socials.containsKey(finalLabel)) {
+        finalLabel = '$label #$idx';
+        idx++;
+      }
+      socials[finalLabel] = url;
+    }
 
     final teacher = base.copyWith(
       name: _nameCtrl.text.trim(),
@@ -209,7 +294,6 @@ class _TeacherFormState extends State<TeacherForm> {
                         decoration: const InputDecoration(
                           labelText: 'Add new category',
                           prefixIcon: Icon(Icons.add),
-                          // 🔹 no suffix tick here anymore
                           border: OutlineInputBorder(),
                         ),
                         onSubmitted: (value) {
@@ -241,7 +325,6 @@ class _TeacherFormState extends State<TeacherForm> {
                             return ListTile(
                               dense: true,
                               title: Text(cat),
-                              // 🔹 no trailing check icon now
                               selected: alreadySelected,
                               onTap: () => Navigator.of(ctx).pop(cat),
                             );
@@ -383,8 +466,7 @@ class _TeacherFormState extends State<TeacherForm> {
                         ? Text(
                             'Tap the arrow to select or add categories',
                             style: t.bodyMedium?.copyWith(
-                              color:
-                                  cs.onSurface.withValues(alpha: 0.6),
+                              color: cs.onSurface.withValues(alpha: 0.6),
                             ),
                           )
                         : Wrap(
@@ -454,7 +536,7 @@ class _TeacherFormState extends State<TeacherForm> {
 
                   const SizedBox(height: 16),
 
-                  // Socials
+                  // Socials (dynamic)
                   Text(
                     'Social & contact links',
                     style: t.titleMedium?.copyWith(
@@ -462,49 +544,14 @@ class _TeacherFormState extends State<TeacherForm> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _websiteCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Website',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.language),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _linkedinCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'LinkedIn',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.business_center_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _twitterCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Twitter / X',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.alternate_email),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _facebookCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Facebook',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.facebook_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _instagramCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Instagram',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.camera_alt_outlined),
-                    ),
+                  _SocialLinksEditor(
+                    links: _socialLinks,
+                    iconForLabel: _iconForLabel,
+                    onChanged: (updated) {
+                      setState(() {
+                        _socialLinks = updated;
+                      });
+                    },
                   ),
 
                   const SizedBox(height: 20),
@@ -533,6 +580,161 @@ class _TeacherFormState extends State<TeacherForm> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SocialLinkEntry {
+  final String id;
+  final String label;
+  final String url;
+
+  _SocialLinkEntry({
+    required this.id,
+    required this.label,
+    required this.url,
+  });
+
+  _SocialLinkEntry copyWith({
+    String? label,
+    String? url,
+  }) {
+    return _SocialLinkEntry(
+      id: id,
+      label: label ?? this.label,
+      url: url ?? this.url,
+    );
+  }
+}
+
+class _SocialLinksEditor extends StatelessWidget {
+  final List<_SocialLinkEntry> links;
+  final IconData Function(String label) iconForLabel;
+  final ValueChanged<List<_SocialLinkEntry>> onChanged;
+
+  const _SocialLinksEditor({
+//    super.key,
+    required this.links,
+    required this.iconForLabel,
+    required this.onChanged,
+  });
+
+  void _addEmptyLink() {
+    final updated = [
+      ...links,
+      _SocialLinkEntry(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        label: '',
+        url: '',
+      ),
+    ];
+    onChanged(updated);
+  }
+
+  void _updateLink(int index, _SocialLinkEntry entry) {
+    final updated = [...links];
+    updated[index] = entry;
+    onChanged(updated);
+  }
+
+  void _deleteLink(int index) {
+    final updated = [...links]..removeAt(index);
+    onChanged(updated);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (links.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'No links yet. Add website, LinkedIn, Twitter, YouTube, email, etc.',
+              style: t.labelSmall?.copyWith(
+                color: cs.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        ...List.generate(links.length, (index) {
+          final link = links[index];
+          final icon = iconForLabel(link.label);
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Card(
+              margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(icon, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: link.label,
+                            decoration: const InputDecoration(
+                              labelText: 'Label (e.g. LinkedIn, Website)',
+                              isDense: true,
+                              border: OutlineInputBorder(),
+                            ),
+                            onChanged: (v) {
+                              _updateLink(
+                                index,
+                                link.copyWith(label: v),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          tooltip: 'Remove link',
+                          onPressed: () => _deleteLink(index),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      initialValue: link.url,
+                      decoration: const InputDecoration(
+                        labelText: 'URL (https://, mailto:, tel:, etc.)',
+                        prefixIcon: Icon(Icons.link),
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (v) {
+                        _updateLink(
+                          index,
+                          link.copyWith(url: v),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: _addEmptyLink,
+            icon: const Icon(Icons.add_link),
+            label: const Text('Add link'),
+          ),
+        ),
+      ],
     );
   }
 }

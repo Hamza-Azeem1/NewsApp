@@ -32,8 +32,7 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
     });
 
     try {
-      final snap =
-          await FirebaseFirestore.instance.collection('courses').get();
+      final snap = await FirebaseFirestore.instance.collection('courses').get();
 
       final setCats = <String>{};
 
@@ -76,7 +75,7 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
   Future<void> _openForm({Course? initial}) async {
     // ✅ Capture context before async gap
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    
+
     final changed = await showDialog<bool>(
       context: context,
       barrierDismissible: false, // close via X or buttons only
@@ -163,13 +162,15 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
                   leading: CircleAvatar(
                     backgroundImage:
                         c.imageUrl.isNotEmpty ? NetworkImage(c.imageUrl) : null,
-                    child: c.imageUrl.isEmpty
-                        ? const Icon(Icons.school)
-                        : null,
+                    child: c.imageUrl.isEmpty ? const Icon(Icons.school) : null,
                   ),
                   title: Text(c.title),
                   subtitle: Text(
-                    c.isPaid ? 'PKR ${c.pricePkr ?? '-'}' : 'Free',
+                    c.isPaid
+                        ? (c.priceUsd != null
+                            ? '\$${c.priceUsd!.toStringAsFixed(2)}'
+                            : 'Paid')
+                        : 'Free',
                   ),
                   onTap: () => _openForm(initial: c),
                   trailing: IconButton(
@@ -178,7 +179,7 @@ class _AdminCoursesScreenState extends State<AdminCoursesScreen> {
                       // ✅ Capture context before async gap
                       Navigator.of(context);
                       final scaffoldMessenger = ScaffoldMessenger.of(context);
-                      
+
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (ctx) => AlertDialog(
