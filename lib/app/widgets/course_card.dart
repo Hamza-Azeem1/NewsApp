@@ -112,7 +112,7 @@ class CourseCard extends StatelessWidget {
                                         ),
                                       ),
                                       backgroundColor:
-                                          cs.secondary.withValues(alpha: 0.9),
+                                          cs.primary.withValues(alpha: 0.85),
                                       visualDensity: VisualDensity.compact,
                                     ),
                                   ]
@@ -126,7 +126,7 @@ class CourseCard extends StatelessWidget {
                                         ),
                                       ),
                                       backgroundColor:
-                                          cs.secondary.withValues(alpha: 0.9),
+                                          cs.primary.withValues(alpha: 0.85),
                                       visualDensity: VisualDensity.compact,
                                     );
                                   }).toList(),

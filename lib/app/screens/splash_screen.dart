@@ -27,9 +27,7 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _mainCtrl;
   late Animation<double> _scaleAnim;
   late Animation<double> _opacityAnim;
-  late Animation<Offset> _slideAnim;
 
-  // Pre-loaded data passed to HomeScreen so it renders instantly
   List<NewsArticle> _preloadedArticles = [];
   List<NewsVideo> _preloadedVideos = [];
   List<AppCategory> _preloadedCategories = [];
@@ -40,9 +38,10 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
+    // Animation controller
     _mainCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      duration: const Duration(milliseconds: 1000),
     );
 
     _scaleAnim = CurvedAnimation(
@@ -55,23 +54,14 @@ class _SplashScreenState extends State<SplashScreen>
       curve: Curves.easeIn,
     );
 
-    _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _mainCtrl,
-      curve: Curves.easeOutCubic,
-    ));
-
     _mainCtrl.forward();
 
-    // Minimum splash display time
-    Future.delayed(const Duration(milliseconds: 2000), () {
+    // Shorter splash delay to make icon disappear faster
+    Future.delayed(const Duration(milliseconds: 600), () {
       _animDone = true;
       _tryNavigate();
     });
 
-    // Load all data in parallel while splash is showing
     _preloadData();
   }
 
@@ -79,7 +69,6 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       final repo = NewsRepository();
 
-      // Fetch categories + first page of articles & videos in parallel
       final results = await Future.wait([
         fetchCategoriesFromFirestore(),
         repo.refreshNews().then((_) => repo.streamNews().first),
@@ -94,24 +83,20 @@ class _SplashScreenState extends State<SplashScreen>
 
       repo.dispose();
     } catch (e) {
-      debugPrint('⚠️ Splash preload error (non-fatal): $e');
-      // Silently continue — HomeScreen will load its own data
+      debugPrint('⚠️ Splash preload error: $e');
     }
 
     _dataReady = true;
     _tryNavigate();
   }
 
-  // Navigate only when BOTH the minimum time has passed AND data is ready.
-  // This prevents the "No content found" flash by ensuring content exists
-  // before HomeScreen is shown.
   void _tryNavigate() {
     if (!_animDone || !_dataReady) return;
     if (!mounted) return;
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 650),
+        transitionDuration: const Duration(milliseconds: 500),
         pageBuilder: (_, animation, __) => FadeTransition(
           opacity: animation,
           child: HomeScreen(
@@ -136,73 +121,51 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final t = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: cs.surface,
       body: Center(
-        child: ScaleTransition(
-          scale: _scaleAnim,
-          child: SlideTransition(
-            position: _slideAnim,
-            child: AnimatedBuilder(
-              animation: _opacityAnim,
-              builder: (context, child) => Opacity(
-                opacity: _opacityAnim.value,
-                child: child,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 26, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('News',
-                            style: t.headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.w800)),
-                        Text(' Swipe',
-                            style: t.headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.w400)),
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                              color: cs.primary, shape: BoxShape.circle),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'News, jobs & more in one swipe.',
-                    style: t.bodyMedium?.copyWith(
-                      color: cs.onSurface.withValues(alpha: 0.75),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-                  // Small loading indicator so user knows something is happening
-                  SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: cs.primary.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // --- Animated Logo ---
+            ScaleTransition(
+              scale: _scaleAnim,
+              child: FadeTransition(
+                opacity: _opacityAnim,
+                child: Image.asset(
+                  'assets/images/app_logo.png',
+                  width: 180, // bigger logo
+                  height: 180,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
-          ),
+
+            const SizedBox(height: 24),
+
+            // Optional tagline
+            Text(
+              'News, jobs & more in one swipe.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.75),
+                    fontWeight: FontWeight.w500,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 32),
+
+            // Small loading indicator
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: cs.primary.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
         ),
       ),
     );

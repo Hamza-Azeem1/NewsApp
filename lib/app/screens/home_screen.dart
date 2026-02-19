@@ -61,9 +61,13 @@ Future<List<AppCategory>> fetchCategoriesFromFirestore() async {
         }
       }
       final primary = (data['primaryCategory'] ?? '').toString().trim();
-      if (primary.isNotEmpty && primary.toLowerCase() != 'all') nameSet.add(primary);
+      if (primary.isNotEmpty && primary.toLowerCase() != 'all') {
+        nameSet.add(primary);
+      }
       final single = (data['category'] ?? '').toString().trim();
-      if (single.isNotEmpty && single.toLowerCase() != 'all') nameSet.add(single);
+      if (single.isNotEmpty && single.toLowerCase() != 'all') {
+        nameSet.add(single);
+      }
     }
 
     for (final doc in results[1].docs) {
@@ -76,7 +80,9 @@ Future<List<AppCategory>> fetchCategoriesFromFirestore() async {
         }
       }
       final single = (data['category'] ?? '').toString().trim();
-      if (single.isNotEmpty && single.toLowerCase() != 'all') nameSet.add(single);
+      if (single.isNotEmpty && single.toLowerCase() != 'all') {
+        nameSet.add(single);
+      }
     }
 
     final sorted = nameSet.toList()
@@ -317,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    //final cs = Theme.of(context).colorScheme;
     final bool isDark =
         widget.isDark ?? Theme.of(context).brightness == Brightness.dark;
     final onThemeChanged = widget.onThemeChanged ?? (_) {};
@@ -343,27 +349,13 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
         ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('News',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w800)),
-            Text('Swipe',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w400)),
-            const SizedBox(width: 6),
-            Container(
-              width: 8,
-              height: 8,
-              decoration:
-                  BoxDecoration(color: cs.primary, shape: BoxShape.circle),
-            ),
-          ],
+        title: Padding(
+          padding: const EdgeInsets.only(top: 10), // adjust as needed
+          child: Image.asset(
+            'assets/images/app_logo.png',
+            width: 180,
+            height: 180,
+          ),
         ),
         centerTitle: true,
         actions: _tabIndex == 0
@@ -440,14 +432,12 @@ class _HomeScreenState extends State<HomeScreen>
           child: FutureBuilder<List<AppCategory>>(
             future: _categoryFuture,
             builder: (context, snapshot) {
-              final cats = _categories.isNotEmpty
-                  ? _categories
-                  : (snapshot.data ?? []);
+              final cats =
+                  _categories.isNotEmpty ? _categories : (snapshot.data ?? []);
               return CategoryBar(
                 categories: cats,
-                selected: _isSwitchingCategory
-                    ? _pendingCategory
-                    : _selectedCategory,
+                selected:
+                    _isSwitchingCategory ? _pendingCategory : _selectedCategory,
                 onSelect: _onCategorySelected,
               );
             },
@@ -510,8 +500,7 @@ class _HomeScreenState extends State<HomeScreen>
                 itemHeight: itemHeight,
                 selectedCategory: _selectedCategory,
                 onRefresh: _handleRefresh,
-                onPageChanged: (i) =>
-                    setState(() => _currentStoryIndex = i),
+                onPageChanged: (i) => setState(() => _currentStoryIndex = i),
               );
             },
           ),
@@ -535,8 +524,7 @@ class _StoryProgressBar extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
 
-    final double progress =
-        total > 0 ? (current / total).clamp(0.0, 1.0) : 0.0;
+    final double progress = total > 0 ? (current / total).clamp(0.0, 1.0) : 0.0;
     final int displayCurrent = current.clamp(0, total);
 
     return Row(
@@ -561,8 +549,7 @@ class _StoryProgressBar extends StatelessWidget {
                 return LinearProgressIndicator(
                   value: value,
                   minHeight: 4,
-                  backgroundColor:
-                      cs.surfaceContainerHighest.withAlpha(180),
+                  backgroundColor: cs.surfaceContainerHighest.withAlpha(180),
                   valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
                 );
               },
@@ -708,8 +695,7 @@ class EndOfFeed extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
                 color: cs.primary.withAlpha(30),
                 borderRadius: BorderRadius.circular(20),
@@ -733,12 +719,11 @@ class EndOfFeed extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  Icon(Icons.check_circle_rounded,
-                      size: 42, color: cs.primary),
+                  Icon(Icons.check_circle_rounded, size: 42, color: cs.primary),
                   const SizedBox(height: 8),
                   Text("You're all caught up",
-                      style: t.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700)),
+                      style:
+                          t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
                   Text(label,
                       style: t.bodySmall

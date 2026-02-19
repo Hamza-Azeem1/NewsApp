@@ -6,7 +6,6 @@ import 'firebase_options.dart';
 import 'app/screens/splash_screen.dart';
 import 'app/services/connectivity_service.dart';
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -14,7 +13,7 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // ✅ Ensure Firestore offline persistence is ON (free on Spark plan)
+  // ✅ Ensure Firestore offline persistence is ON
   if (!kIsWeb) {
     FirebaseFirestore.instance.settings = const Settings(
       persistenceEnabled: true,
@@ -26,7 +25,6 @@ Future<void> main() async {
 
   runApp(const NewsSwipeApp());
 }
-
 
 class NewsSwipeApp extends StatefulWidget {
   const NewsSwipeApp({super.key});
@@ -46,107 +44,138 @@ class _NewsSwipeAppState extends State<NewsSwipeApp> {
 
   @override
   Widget build(BuildContext context) {
-    const seed = Color(0xFF7C5CFF);
 
-    // LIGHT THEME
-    final baseLight = ThemeData(
+    // =========================
+    // PURE WHITE THEME (Light)
+    // =========================
+    final light = ThemeData(
       useMaterial3: true,
-      colorSchemeSeed: seed,
       brightness: Brightness.light,
-    );
-
-    final light = baseLight.copyWith(
-      scaffoldBackgroundColor: const Color(0xFFF5F5FB),
-      appBarTheme: baseLight.appBarTheme.copyWith(
+      scaffoldBackgroundColor: Colors.white,
+      colorScheme: const ColorScheme.light(
+        primary: Colors.black,
+        onPrimary: Colors.white,
+        secondary: Colors.black,
+        onSecondary: Colors.white,
+        // background: Colors.white,
+        // onBackground: Colors.black,
+        surface: Colors.white,
+        onSurface: Colors.black,
+      ),
+      appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: false,
-        backgroundColor: Colors.transparent,
-        foregroundColor: baseLight.colorScheme.onSurface,
-        titleTextStyle: baseLight.textTheme.titleLarge?.copyWith(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        titleTextStyle: TextStyle(
           fontWeight: FontWeight.w800,
+          fontSize: 20,
+          color: Colors.black,
         ),
       ),
-      navigationBarTheme: baseLight.navigationBarTheme.copyWith(
+      navigationBarTheme: const NavigationBarThemeData(
         elevation: 0,
         backgroundColor: Colors.white,
-        indicatorColor:
-            baseLight.colorScheme.primary.withValues(alpha: 0.12),
+        indicatorColor: Colors.black12,
         labelTextStyle: WidgetStatePropertyAll(
-          baseLight.textTheme.labelMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
+          TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
-      snackBarTheme: baseLight.snackBarTheme.copyWith(
+      chipTheme: const ChipThemeData(
+        backgroundColor: Colors.white,
+        selectedColor: Colors.black12,
+        side: BorderSide(color: Colors.black12),
+        labelStyle: TextStyle(color: Colors.black),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      ),
+      snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.black,
+        contentTextStyle: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textTheme: const TextTheme(
+        titleLarge: TextStyle(fontWeight: FontWeight.w800),
+        titleMedium: TextStyle(fontWeight: FontWeight.w700),
+        bodyLarge: TextStyle(height: 1.45),
+        bodyMedium: TextStyle(height: 1.45),
       ),
     );
 
-    // DARK THEME
-    const darkBg = Color(0xFF0F1115);
-    final baseDark = ThemeData(
+    // =========================
+    // PURE BLACK THEME (Dark)
+    // =========================
+    final dark = ThemeData(
       useMaterial3: true,
-      colorSchemeSeed: seed,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: darkBg,
-    );
-
-    final dark = baseDark.copyWith(
-      appBarTheme: baseDark.appBarTheme.copyWith(
+      scaffoldBackgroundColor: Colors.black,
+      colorScheme: const ColorScheme.dark(
+        primary: Colors.white,
+        onPrimary: Colors.black,
+        secondary: Colors.white,
+        onSecondary: Colors.black,
+        // background: Colors.black,
+        // onBackground: Colors.white,
+        surface: Colors.black,
+        onSurface: Colors.white,
+      ),
+      appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: false,
-        backgroundColor: Colors.transparent,
-        titleTextStyle: baseDark.textTheme.titleLarge?.copyWith(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        titleTextStyle: TextStyle(
           fontWeight: FontWeight.w800,
+          fontSize: 20,
+          color: Colors.white,
         ),
       ),
-      navigationBarTheme: baseDark.navigationBarTheme.copyWith(
+      navigationBarTheme: const NavigationBarThemeData(
         elevation: 0,
-        backgroundColor: darkBg,
-        indicatorColor:
-            baseDark.colorScheme.secondaryContainer.withValues(alpha: 0.25),
+        backgroundColor: Colors.black,
+        indicatorColor: Colors.white12,
         labelTextStyle: WidgetStatePropertyAll(
-          baseDark.textTheme.labelMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
+          TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
-      chipTheme: baseDark.chipTheme.copyWith(
-        side: const BorderSide(color: Colors.white10),
-        selectedColor:
-            baseDark.colorScheme.secondaryContainer.withValues(alpha: 0.25),
-        labelStyle: baseDark.textTheme.labelLarge,
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      chipTheme: const ChipThemeData(
+        backgroundColor: Colors.black,
+        selectedColor: Colors.white12,
+        side: BorderSide(color: Colors.white12),
+        labelStyle: TextStyle(color: Colors.white),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       ),
-      textTheme: baseDark.textTheme.copyWith(
-        titleLarge: baseDark.textTheme.titleLarge
-            ?.copyWith(fontWeight: FontWeight.w800),
-        titleMedium: baseDark.textTheme.titleMedium
-            ?.copyWith(fontWeight: FontWeight.w700),
-        bodyLarge: baseDark.textTheme.bodyLarge?.copyWith(height: 1.45),
-        bodyMedium: baseDark.textTheme.bodyMedium?.copyWith(height: 1.45),
-      ),
-      snackBarTheme: baseDark.snackBarTheme.copyWith(
+      snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF1A1D24),
-        contentTextStyle:
-            const TextStyle(fontWeight: FontWeight.w600),
+        backgroundColor: Colors.white,
+        contentTextStyle: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textTheme: const TextTheme(
+        titleLarge: TextStyle(fontWeight: FontWeight.w800),
+        titleMedium: TextStyle(fontWeight: FontWeight.w700),
+        bodyLarge: TextStyle(height: 1.45),
+        bodyMedium: TextStyle(height: 1.45),
       ),
     );
 
     final isDark = _themeMode == ThemeMode.dark;
 
     return MaterialApp(
-  title: 'News Swipe',
-  debugShowCheckedModeBanner: false,
-  themeMode: _themeMode,
-  theme: light,
-  darkTheme: dark,
-  home: SplashScreen(
-    themeMode: _themeMode,
-    isDark: isDark,
-    onThemeChanged: _setTheme,
-  ),
-);
-
+      title: 'News Swipe',
+      debugShowCheckedModeBanner: false,
+      themeMode: _themeMode,
+      theme: light,
+      darkTheme: dark,
+      home: SplashScreen(
+        themeMode: _themeMode,
+        isDark: isDark,
+        onThemeChanged: _setTheme,
+      ),
+    );
   }
 }
