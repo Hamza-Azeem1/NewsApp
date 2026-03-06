@@ -350,9 +350,11 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ),
         title: Padding(
-          padding: const EdgeInsets.only(top: 10), // adjust as needed
+          padding: const EdgeInsets.only(top: 10),
           child: Image.asset(
-            'assets/images/app_logo.png',
+            Theme.of(context).brightness == Brightness.dark
+                ? 'assets/images/app_logo_dark.png' // Dark theme logo
+                : 'assets/images/app_logo_light.png', // Light theme logo
             width: 180,
             height: 180,
           ),

@@ -23,6 +23,7 @@ dependencies:
   internet_connection_checker: ^1.0.0
   video_player: ^2.9.0
   youtube_player_iframe: ^5.2.2
+  flutter_native_splash: ^2.4.0
 
 dev_dependencies:
   flutter_test:
@@ -43,5 +44,25 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/images/app_icon.png"
-  adaptive_icon_background: "#000000"       # black background for Android adaptive icon
+  adaptive_icon_background: "#000000"
   adaptive_icon_foreground: "assets/images/app_icon.png"
+
+# -------------------------------
+# Flutter Native Splash Setup
+# -------------------------------
+flutter_native_splash:
+  color: "#000000"                          # Match your app's splash background color
+  image: assets/images/app_icon.png         # Your splash logo/image
+  color_dark: "#000000"                     # Dark mode background
+  image_dark: assets/images/app_icon.png    # Dark mode image
+
+  # Android 12+ specific splash config
+  android_12:
+    color: "#000000"
+    image: assets/images/app_icon.png
+    color_dark: "#000000"
+    image_dark: assets/images/app_icon.png
+    icon_background_color: "#000000"
+    icon_background_color_dark: "#000000"
+
+  web: false                                # Set to true if you have a Flutter web app

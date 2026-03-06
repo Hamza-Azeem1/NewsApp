@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'firebase_options.dart';
 import 'app/screens/splash_screen.dart';
 import 'app/services/connectivity_service.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // ✅ Preserve native splash until app is fully ready
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -22,6 +25,9 @@ Future<void> main() async {
 
   // ✅ Start connectivity service
   await ConnectivityService.instance.init();
+
+  // ✅ Remove native splash — Flutter will now take over with SplashScreen
+  FlutterNativeSplash.remove();
 
   runApp(const NewsSwipeApp());
 }
@@ -57,8 +63,6 @@ class _NewsSwipeAppState extends State<NewsSwipeApp> {
         onPrimary: Colors.white,
         secondary: Colors.black,
         onSecondary: Colors.white,
-        // background: Colors.white,
-        // onBackground: Colors.black,
         surface: Colors.white,
         onSurface: Colors.black,
       ),
@@ -116,8 +120,6 @@ class _NewsSwipeAppState extends State<NewsSwipeApp> {
         onPrimary: Colors.black,
         secondary: Colors.white,
         onSecondary: Colors.black,
-        // background: Colors.black,
-        // onBackground: Colors.white,
         surface: Colors.black,
         onSurface: Colors.white,
       ),
