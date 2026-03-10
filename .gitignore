@@ -20,7 +20,6 @@ migrate_working_dir/
 
 serviceAccountKey.json
 set-admin.js
-lib/firebase_options.dart
 
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line
