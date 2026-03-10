@@ -18,13 +18,12 @@ migrate_working_dir/
 *.iws
 .idea/
 
+# VS Code (optional)
+#.vscode/
+
+# Firebase Admin secret (never push)
 serviceAccountKey.json
 set-admin.js
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/
@@ -34,15 +33,17 @@ set-admin.js
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
 
-# Symbolication related
-app.*.symbols
+# Flutter build artifacts
+# Ignore all build folders EXCEPT build/web
+/build/*
+!/build/web/
 
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+# Android build artifacts
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Symbolication / Obfuscation
+app.*.symbols
+app.*.map.json
